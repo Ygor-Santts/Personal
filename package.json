@@ -7,6 +7,7 @@
     "check-types": "vue-tsc --noEmit",
     "web": "nuxt dev",
     "web:build": "nuxt build",
+    "generate": "nuxt generate",
     "lint": "eslint . --config ../../.config/eslint.config.cjs",
     "format": "prettier . --config ../../.config/prettier.config.cjs --write",
     "preview": "nuxt preview",

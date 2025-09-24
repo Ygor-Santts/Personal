@@ -1,12 +1,17 @@
+/// <reference types="@nuxt/image" />
+import { defineNuxtConfig } from "nuxt/config";
 export default defineNuxtConfig({
   devtools: { enabled: true },
   ssr: false, // Para GitHub Pages
   nitro: {
-    preset: "static",
+    preset: "github_pages",
   },
   app: {
     baseURL: "/Personal/", // Nome do seu repositório
     buildAssetsDir: "/_nuxt/",
+  },
+  routeRules: {
+    "/**": { prerender: true },
   },
   modules: [
     "@nuxtjs/tailwindcss",
@@ -15,27 +20,9 @@ export default defineNuxtConfig({
     "@pinia/nuxt",
   ],
   css: ["~/assets/css/main.css"],
-  tailwindcss: {
-    config: {
-      content: [
-        "./components/**/*.{js,vue,ts}",
-        "./layouts/**/*.vue",
-        "./pages/**/*.vue",
-        "./plugins/**/*.{js,ts}",
-        "./app.vue",
-        "./error.vue",
-      ],
-      theme: {
-        extend: {
-          colors: {
-            "teal-dark": "#2D5A5A",
-            "beige-light": "#F5F5DC",
-          },
-        },
-      },
-    },
-  },
+  // @ts-expect-error - 'image' options are injected by @nuxt/image module
   image: {
+    provider: "none", // Evita transformações via servidor em hospedagem estática
     quality: 80,
     format: ["webp", "avif", "jpeg"],
   },
