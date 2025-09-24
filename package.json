@@ -1,0 +1,48 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "check-types": "vue-tsc --noEmit",
+    "web": "nuxt dev",
+    "web:build": "nuxt build",
+    "lint": "eslint . --config ../../.config/eslint.config.cjs",
+    "format": "prettier . --config ../../.config/prettier.config.cjs --write",
+    "preview": "nuxt preview",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "ds:dev": "cross-env NUXT_HISTOIRE=true histoire dev",
+    "ds:build": "cross-env NUXT_HISTOIRE=true histoire build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.12.3",
+  "devDependencies": {
+    "@histoire/plugin-nuxt": "1.0.0-alpha.2",
+    "@histoire/plugin-vue": "1.0.0-alpha.2",
+    "@nuxtjs/tailwindcss": "7.0.0-beta.0",
+    "@types/node": "^24.0.4",
+    "@vue/test-utils": "^2.4.6",
+    "@vue/typescript-plugin": "^2.2.10",
+    "autoprefixer": "^10.4.21",
+    "histoire": "1.0.0-alpha.2",
+    "jsdom": "^27.0.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "4.1.11",
+    "vitest": "^3.2.4",
+    "vue-tsc": "^2.2.10"
+  },
+  "dependencies": {
+    "@nuxt/image": "^1.10.0",
+    "@nuxtjs/i18n": "^9.5.6",
+    "@pinia/nuxt": "^0.11.1",
+    "flowbite": "^3.1.2",
+    "nuxt": "^3.17.5",
+    "swiper": "^12.0.2",
+    "vue": "^3.5.17",
+    "vue-i18n": "^11.1.7"
+  }
+}
