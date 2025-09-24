@@ -47,26 +47,26 @@
             />
           </div>
         </div>
-        <button
+        <div
           v-if="showArrows"
-          @click="prevSlide"
-          class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white bg-opacity-90 text-gray-800 rounded-full shadow-lg hover:bg-opacity-100 z-30 flex items-center justify-center"
+          class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white bg-opacity-90 rounded-full shadow-lg hover:bg-opacity-100 z-30 flex items-center justify-center"
         >
           <Icon
             name="heroicons:chevron-left"
-            class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6"
+            @click.stop="prevSlide"
+            class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-gray-800 cursor-pointer hover:text-gray-600 transition-colors"
           />
-        </button>
-        <button
+        </div>
+        <div
           v-if="showArrows"
-          @click="nextSlide"
-          class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white bg-opacity-90 text-gray-800 rounded-full shadow-lg hover:bg-opacity-100 z-30 flex items-center justify-center"
+          class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white bg-opacity-90 rounded-full shadow-lg hover:bg-opacity-100 z-30 flex items-center justify-center"
         >
           <Icon
             name="heroicons:chevron-right"
-            class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6"
+            @click.stop="nextSlide"
+            class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-gray-800 cursor-pointer hover:text-gray-600 transition-colors"
           />
-        </button>
+        </div>
       </div>
       <div
         v-if="showContent"
@@ -293,9 +293,9 @@ const handleDrag = (distance: number) => {
   const dragThreshold = 50;
   if (Math.abs(distance) > dragThreshold) {
     if (distance > 0) {
-      nextSlide();
-    } else {
       prevSlide();
+    } else {
+      nextSlide();
     }
   }
 };
