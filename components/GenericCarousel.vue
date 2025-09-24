@@ -84,33 +84,20 @@
         v-if="showIndicators || showProgressBar || showPlayPause"
         class="flex items-center justify-center space-x-3 sm:space-x-4 pb-4 sm:pb-6 mt-4"
       >
-        <div v-if="showIndicators" class="flex space-x-2">
+        <div
+          v-if="showIndicators"
+          class="flex items-center space-x-2 bg-gray-100 rounded-full px-3 py-2"
+        >
           <button
             v-for="(item, index) in items"
             :key="index"
             @click="goToSlide(index)"
             :class="[
-              'w-2 h-2 rounded-full ',
+              'transition-all duration-300 ease-out',
               currentIndex === index
-                ? 'bg-gray-800 scale-125'
-                : 'bg-gray-300 scale-100',
+                ? 'w-6 h-2 rounded-full bg-blue-600'
+                : 'w-2 h-2 rounded-full bg-gray-300',
             ]"
-            :style="{
-              transform: `scale(${currentIndex === index ? '1.25' : '1'})`,
-              boxShadow:
-                currentIndex === index ? '0 0 8px rgba(0,0,0,0.3)' : 'none',
-            }"
-          />
-        </div>
-        <div
-          v-if="showProgressBar"
-          class="w-16 h-1 bg-gray-300 rounded-full overflow-hidden"
-        >
-          <div
-            class="h-full bg-gray-800 rounded-full transition-all duration-700 ease-out"
-            :style="{
-              width: `${((currentIndex + 1) / items.length) * 100}%`,
-            }"
           />
         </div>
         <button
