@@ -11,86 +11,78 @@
       >
         <div class="absolute inset-0 flex items-center justify-center">
           <div
-            :class="`absolute left-0 ${sideItemWidth} h-full rounded-l-xl sm:rounded-l-2xl overflow-hidden z-0 `"
-            :style="{ 
+            :class="`absolute left-0 ${sideItemWidth} h-11/12 rounded-l-xl sm:rounded-l-2xl overflow-hidden z-0 `"
+            :style="{
               opacity: sideItemOpacity,
             }"
           >
-            <div class="" >
-              <slot 
-                name="side-item" 
-                :item="getLeftItem()" 
-                :index="getLeftIndex()"
-                :isActive="false"
-              />
-            </div>
+            <slot
+              name="side-item"
+              :item="getLeftItem()"
+              :index="getLeftIndex()"
+              :isActive="false"
+            />
           </div>
           <div
             :class="`min-w-[40%] ${centerItemWidth} h-full rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl relative z-20 `"
           >
-            <div class="" >
-              <slot 
-                name="center-item" 
-                :item="items[currentIndex]" 
-                :index="currentIndex"
-                :isActive="true"
-              />
-            </div>
+            <slot
+              name="center-item"
+              :item="items[currentIndex]"
+              :index="currentIndex"
+              :isActive="true"
+            />
           </div>
           <div
-            :class="`absolute right-0 ${sideItemWidth} h-full rounded-r-xl sm:rounded-r-2xl overflow-hidden z-0 `"
-            :style="{ 
+            :class="`absolute right-0 ${sideItemWidth}  h-11/12 rounded-r-xl sm:rounded-r-2xl overflow-hidden z-0 `"
+            :style="{
               opacity: sideItemOpacity,
             }"
           >
-            <div class="" >
-              <slot 
-                name="side-item" 
-                :item="getRightItem()" 
-                :index="getRightIndex()"
-                :isActive="false"
-              />
-            </div>
+            <slot
+              name="side-item"
+              :item="getRightItem()"
+              :index="getRightIndex()"
+              :isActive="false"
+            />
           </div>
         </div>
         <button
           v-if="showArrows"
           @click="prevSlide"
-          class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white bg-opacity-90 text-gray-800 rounded-full shadow-lg hover:bg-opacity-100  z-30 flex items-center justify-center"
+          class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white bg-opacity-90 text-gray-800 rounded-full shadow-lg hover:bg-opacity-100 z-30 flex items-center justify-center"
         >
           <Icon
             name="heroicons:chevron-left"
-            class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 "
+            class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6"
           />
         </button>
         <button
           v-if="showArrows"
           @click="nextSlide"
-          class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white bg-opacity-90 text-gray-800 rounded-full shadow-lg hover:bg-opacity-100  z-30 flex items-center justify-center"
+          class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white bg-opacity-90 text-gray-800 rounded-full shadow-lg hover:bg-opacity-100 z-30 flex items-center justify-center"
         >
           <Icon
             name="heroicons:chevron-right"
-            class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 "
+            class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6"
           />
         </button>
       </div>
       <div
         v-if="showContent"
-        class="px-4 sm:px-6 md:px-8 py-4 sm:py-6 text-center space-y-3 sm:space-y-4 "
+        class="px-4 sm:px-6 md:px-8 py-4 sm:py-6 text-center space-y-3 sm:space-y-4"
       >
-        <div 
-          class=""
-        >
-          <slot 
-            name="content" 
-            :item="items[currentIndex]" 
+        <div class="">
+          <slot
+            name="content"
+            :item="items[currentIndex]"
             :index="currentIndex"
           />
         </div>
       </div>
       <div
         v-if="showIndicators || showProgressBar || showPlayPause"
-        class="flex items-center justify-center space-x-3 sm:space-x-4 pb-4 sm:pb-6 mt-4 "
+        class="flex items-center justify-center space-x-3 sm:space-x-4 pb-4 sm:pb-6 mt-4"
       >
         <div v-if="showIndicators" class="flex space-x-2">
           <button
@@ -99,17 +91,26 @@
             @click="goToSlide(index)"
             :class="[
               'w-2 h-2 rounded-full ',
-              currentIndex === index ? 'bg-gray-800 scale-125' : 'bg-gray-300 scale-100',
+              currentIndex === index
+                ? 'bg-gray-800 scale-125'
+                : 'bg-gray-300 scale-100',
             ]"
-          />
-            :style="{ 
-              transform: `scale(${currentIndex === index ? "1.25" : "1"})`,
-              boxShadow: currentIndex === index ? "0 0 8px rgba(0,0,0,0.3)" : "none"
+            :style="{
+              transform: `scale(${currentIndex === index ? '1.25' : '1'})`,
+              boxShadow:
+                currentIndex === index ? '0 0 8px rgba(0,0,0,0.3)' : 'none',
             }"
+          />
         </div>
-        <div v-if="showProgressBar" class="w-16 h-1 bg-gray-300 rounded-full overflow-hidden">
+        <div
+          v-if="showProgressBar"
+          class="w-16 h-1 bg-gray-300 rounded-full overflow-hidden"
+        >
           <div
             class="h-full bg-gray-800 rounded-full transition-all duration-700 ease-out"
+            :style="{
+              width: `${((currentIndex + 1) / items.length) * 100}%`,
+            }"
           />
         </div>
         <button
