@@ -1,12 +1,17 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
+  ssr: false, // Para GitHub Pages
+  app: {
+    baseURL: "/Personal/", // Nome do seu repositório
+    buildAssetsDir: "/_nuxt/",
+  },
   modules: [
-    '@nuxtjs/tailwindcss',
-    '@nuxt/image',
-    '@nuxtjs/i18n',
-    '@pinia/nuxt'
+    "@nuxtjs/tailwindcss",
+    "@nuxt/image",
+    "@nuxtjs/i18n",
+    "@pinia/nuxt",
   ],
-  css: ['~/assets/css/main.css'],
+  css: ["~/assets/css/main.css"],
   tailwindcss: {
     config: {
       content: [
@@ -15,20 +20,20 @@ export default defineNuxtConfig({
         "./pages/**/*.vue",
         "./plugins/**/*.{js,ts}",
         "./app.vue",
-        "./error.vue"
+        "./error.vue",
       ],
       theme: {
         extend: {
           colors: {
-            'teal-dark': '#2D5A5A',
-            'beige-light': '#F5F5DC'
-          }
-        }
-      }
-    }
+            "teal-dark": "#2D5A5A",
+            "beige-light": "#F5F5DC",
+          },
+        },
+      },
+    },
   },
   image: {
     quality: 80,
-    format: ['webp', 'avif', 'jpeg']
-  }
-})
+    format: ["webp", "avif", "jpeg"],
+  },
+});

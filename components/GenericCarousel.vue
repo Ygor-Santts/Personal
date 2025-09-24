@@ -280,9 +280,9 @@ const handleDrag = (distance: number) => {
   const dragThreshold = 50;
   if (Math.abs(distance) > dragThreshold) {
     if (distance > 0) {
-      prevSlide();
-    } else {
       nextSlide();
+    } else {
+      prevSlide();
     }
   }
 };
