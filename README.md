@@ -90,6 +90,24 @@ pages/
 - `pnpm preview` - Preview do build de produção
 - `pnpm lint` - Executa o linter
 - `pnpm format` - Formata o código
+ - `pnpm generate` - Gera site estático em `.output/public`
+
+## 🌐 Deploy no GitHub Pages
+
+O projeto está configurado para GitHub Pages com Nuxt 3 (static):
+
+- `nuxt.config.ts`: `nitro.preset = "github_pages"` e `app.baseURL = "/Personal/"`
+- `@nuxt/image` com `provider: "none"` para funcionamento em hospedagem estática
+- GitHub Actions em `.github/workflows/deploy.yml`
+
+Passos:
+
+1. Confirme que o branch padrão é `main` e o repositório se chama `Personal`.
+2. Nas configurações do repositório, habilite GitHub Pages com source "GitHub Actions".
+3. Faça push para `main`. A action irá:
+   - Instalar dependências
+   - `pnpm generate` (gera em `.output/public`)
+   - Publicar no Pages
 
 ## 🎨 Personalização
 
