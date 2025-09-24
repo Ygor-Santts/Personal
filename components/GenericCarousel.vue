@@ -11,7 +11,7 @@
       >
         <div class="absolute inset-0 flex items-center justify-center">
           <div
-            :class="`absolute left-0 ${sideItemWidth} h-11/12 rounded-l-xl sm:rounded-l-2xl overflow-hidden z-0 `"
+            :class="`absolute left-0 ${sideItemWidth} h-11/12 rounded-l-xl sm:rounded-l-2xl overflow-hidden z-0 transition-all duration-300 ease-out`"
             :style="{
               opacity: sideItemOpacity,
             }"
@@ -24,7 +24,7 @@
             />
           </div>
           <div
-            :class="`min-w-[40%] ${centerItemWidth} h-full rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl relative z-20 `"
+            :class="`min-w-[40%] ${centerItemWidth} h-full rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl relative z-20 transition-all duration-300 ease-out`"
           >
             <slot
               name="center-item"
@@ -34,7 +34,7 @@
             />
           </div>
           <div
-            :class="`absolute right-0 ${sideItemWidth}  h-11/12 rounded-r-xl sm:rounded-r-2xl overflow-hidden z-0 `"
+            :class="`absolute right-0 ${sideItemWidth}  h-11/12 rounded-r-xl sm:rounded-r-2xl overflow-hidden z-0 transition-all duration-300 ease-out`"
             :style="{
               opacity: sideItemOpacity,
             }"
@@ -72,13 +72,15 @@
         v-if="showContent"
         class="px-4 sm:px-6 md:px-8 py-4 sm:py-6 text-center space-y-3 sm:space-y-4"
       >
-        <div class="">
-          <slot
-            name="content"
-            :item="items[currentIndex]"
-            :index="currentIndex"
-          />
-        </div>
+        <Transition name="content-fade" mode="out-in">
+          <div :key="currentIndex" class="transition-all duration-300 ease-out">
+            <slot
+              name="content"
+              :item="items[currentIndex]"
+              :index="currentIndex"
+            />
+          </div>
+        </Transition>
       </div>
       <div
         v-if="showIndicators || showProgressBar || showPlayPause"
@@ -391,5 +393,19 @@ button:active {
 }
 .carousel-slide-enter-right {
   animation: slideInFromRight 0.7s ease-out;
+}
+
+/* Content fade transitions */
+.content-fade-enter-active,
+.content-fade-leave-active {
+  transition: all 0.3s ease-out;
+}
+.content-fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.content-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>
