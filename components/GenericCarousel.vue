@@ -38,7 +38,6 @@
             </div>
           </div>
           <div
-          <div
             :class="`absolute right-0 ${sideItemWidth} h-full rounded-r-xl sm:rounded-r-2xl overflow-hidden z-0 `"
             :style="{ 
               opacity: sideItemOpacity,
@@ -103,6 +102,10 @@
               currentIndex === index ? 'bg-gray-800 scale-125' : 'bg-gray-300 scale-100',
             ]"
           />
+            :style="{ 
+              transform: `scale(${currentIndex === index ? "1.25" : "1"})`,
+              boxShadow: currentIndex === index ? "0 0 8px rgba(0,0,0,0.3)" : "none"
+            }"
         </div>
         <div v-if="showProgressBar" class="w-16 h-1 bg-gray-300 rounded-full overflow-hidden">
           <div
