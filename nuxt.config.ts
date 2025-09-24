@@ -2,9 +2,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   ssr: false, // Para GitHub Pages
   nitro: {
-    prerender: {
-      routes: ["/"],
-    },
+    preset: "static",
   },
   app: {
     baseURL: "/Personal/", // Nome do seu repositório
