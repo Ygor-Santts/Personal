@@ -1,6 +1,11 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
   ssr: false, // Para GitHub Pages
+  nitro: {
+    prerender: {
+      routes: ["/"],
+    },
+  },
   app: {
     baseURL: "/Personal/", // Nome do seu repositório
     buildAssetsDir: "/_nuxt/",

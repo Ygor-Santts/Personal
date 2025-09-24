@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Carousel Component Demo</title>
+    <meta
+      name="description"
+      content="Demonstração de um componente de carousel personalizado construído com Vue 3 e Nuxt.js"
+    />
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .container {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        max-width: 600px;
+      }
+      h1 {
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 2.5rem;
+      }
+      p {
+        color: #666;
+        line-height: 1.6;
+        margin-bottom: 30px;
+      }
+      .loading {
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .error {
+        color: #e74c3c;
+        background: #fdf2f2;
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎠 Carousel Demo</h1>
+      <p>Carregando a demonstração do componente de carousel...</p>
+      <div class="loading"></div>
+      <div class="error" style="display: none">
+        <p>
+          ❌ Erro ao carregar a aplicação. Verifique se o GitHub Pages está
+          configurado corretamente.
+        </p>
+        <p>
+          Se o problema persistir, acesse:
+          <a href="https://github.com/Ygor-Santts/Personal"
+            >Repositório no GitHub</a
+          >
+        </p>
+      </div>
+    </div>
+
+    <script>
+      // Redireciona para a aplicação principal após 3 segundos
+      setTimeout(() => {
+        window.location.href = "/Personal/";
+      }, 3000);
+
+      // Mostra erro se não conseguir carregar
+      setTimeout(() => {
+        document.querySelector(".loading").style.display = "none";
+        document.querySelector(".error").style.display = "block";
+      }, 10000);
+    </script>
+  </body>
+</html>

@@ -1,18 +1,28 @@
-import { createRenderer, getRequestDependencies, getPreloadLinks, getPrefetchLinks } from 'vue-bundle-renderer/runtime';
-import { b as buildAssetsURL, u as useRuntimeConfig, g as getResponseStatusText, a as getResponseStatus, d as defineRenderHandler, p as publicAssetsURL, c as getQuery, e as createError, f as getRouteRules, h as hasProtocol, r as relative, j as joinURL, i as useNitroApp } from '../nitro/nitro.mjs';
-import { createHead as createHead$1, propsToString, renderSSRHead } from 'unhead/server';
-import { stringify, uneval } from 'devalue';
-import { toValue, isRef } from 'vue';
-import { DeprecationsPlugin, PromisesPlugin, TemplateParamsPlugin, AliasSortingPlugin } from 'unhead/plugins';
-import 'node:http';
-import 'node:https';
-import 'node:events';
-import 'node:buffer';
+import { createRenderer, getRequestDependencies, getPreloadLinks, getPrefetchLinks } from 'file:///home/user/Personal/node_modules/.pnpm/vue-bundle-renderer@2.1.2/node_modules/vue-bundle-renderer/dist/runtime.mjs';
+import { getResponseStatusText, getResponseStatus, getQuery, createError, appendResponseHeader } from 'file:///home/user/Personal/node_modules/.pnpm/h3@1.15.4/node_modules/h3/dist/index.mjs';
+import { b as buildAssetsURL, u as useRuntimeConfig, a as useStorage, d as defineRenderHandler, p as publicAssetsURL, g as getRouteRules, j as joinURL, w as withoutTrailingSlash, h as hasProtocol, c as useNitroApp } from '../nitro/nitro.mjs';
+import { createHead as createHead$1, propsToString, renderSSRHead } from 'file:///home/user/Personal/node_modules/.pnpm/unhead@2.0.17/node_modules/unhead/dist/server.mjs';
+import { stringify, uneval } from 'file:///home/user/Personal/node_modules/.pnpm/devalue@5.3.2/node_modules/devalue/index.js';
+import { toValue, isRef } from 'file:///home/user/Personal/node_modules/.pnpm/vue@3.5.21_typescript@5.9.2/node_modules/vue/index.mjs';
+import { DeprecationsPlugin, PromisesPlugin, TemplateParamsPlugin, AliasSortingPlugin } from 'file:///home/user/Personal/node_modules/.pnpm/unhead@2.0.17/node_modules/unhead/dist/plugins.mjs';
+import { relative } from 'file:///home/user/Personal/node_modules/.pnpm/pathe@2.0.3/node_modules/pathe/dist/index.mjs';
+import 'file:///home/user/Personal/node_modules/.pnpm/destr@2.0.5/node_modules/destr/dist/index.mjs';
+import 'file:///home/user/Personal/node_modules/.pnpm/hookable@5.5.3/node_modules/hookable/dist/index.mjs';
+import 'file:///home/user/Personal/node_modules/.pnpm/ofetch@1.4.1/node_modules/ofetch/dist/node.mjs';
+import 'file:///home/user/Personal/node_modules/.pnpm/node-mock-http@1.0.3/node_modules/node-mock-http/dist/index.mjs';
+import 'file:///home/user/Personal/node_modules/.pnpm/unstorage@1.17.1_db0@0.3.2_ioredis@5.8.0/node_modules/unstorage/dist/index.mjs';
+import 'file:///home/user/Personal/node_modules/.pnpm/unstorage@1.17.1_db0@0.3.2_ioredis@5.8.0/node_modules/unstorage/drivers/fs.mjs';
+import 'file:///home/user/Personal/node_modules/.pnpm/unstorage@1.17.1_db0@0.3.2_ioredis@5.8.0/node_modules/unstorage/drivers/fs-lite.mjs';
+import 'file:///home/user/Personal/node_modules/.pnpm/unstorage@1.17.1_db0@0.3.2_ioredis@5.8.0/node_modules/unstorage/drivers/lru-cache.mjs';
+import 'file:///home/user/Personal/node_modules/.pnpm/ohash@2.0.11/node_modules/ohash/dist/index.mjs';
+import 'file:///home/user/Personal/node_modules/.pnpm/klona@2.0.6/node_modules/klona/dist/index.mjs';
+import 'file:///home/user/Personal/node_modules/.pnpm/defu@6.1.4/node_modules/defu/dist/defu.mjs';
+import 'file:///home/user/Personal/node_modules/.pnpm/scule@1.3.0/node_modules/scule/dist/index.mjs';
+import 'file:///home/user/Personal/node_modules/.pnpm/unctx@2.4.1/node_modules/unctx/dist/index.mjs';
+import 'file:///home/user/Personal/node_modules/.pnpm/radix3@1.1.2/node_modules/radix3/dist/index.mjs';
 import 'node:fs';
-import 'node:path';
-import 'node:crypto';
 import 'node:url';
-import 'ipx';
+import 'file:///home/user/Personal/node_modules/.pnpm/ipx@2.1.1_db0@0.3.2_ioredis@5.8.0/node_modules/ipx/dist/index.mjs';
 
 const VueResolver = (_, value) => {
   return isRef(value) ? toValue(value) : value;
@@ -100,6 +110,10 @@ function getRenderer(ssrContext) {
   return getSPARenderer() ;
 }
 
+const payloadCache = useStorage("internal:nuxt:prerender:payload") ;
+useStorage("internal:nuxt:prerender:island") ;
+useStorage("internal:nuxt:prerender:island-props") ;
+
 function renderPayloadResponse(ssrContext) {
   return {
     body: stringify(splitPayload(ssrContext).payload, ssrContext._payloadReducers) ,
@@ -161,6 +175,9 @@ function createSSRContext(event) {
     _payloadReducers: /* @__PURE__ */ Object.create(null),
     modules: /* @__PURE__ */ new Set()
   };
+  {
+    ssrContext.payload.prerenderedAt = Date.now();
+  }
   return ssrContext;
 }
 function setSSRError(ssrContext, error) {
@@ -179,6 +196,7 @@ const HAS_APP_TELEPORTS = !!(appTeleportAttrs.id);
 const APP_TELEPORT_OPEN_TAG = HAS_APP_TELEPORTS ? `<${appTeleportTag}${propsToString(appTeleportAttrs)}>` : "";
 const APP_TELEPORT_CLOSE_TAG = HAS_APP_TELEPORTS ? `</${appTeleportTag}>` : "";
 const PAYLOAD_URL_RE = /^[^?]*\/_payload.json(?:\?.*)?$/ ;
+const PAYLOAD_FILENAME = "_payload.json" ;
 let entryPath;
 const renderer = defineRenderHandler(async (event) => {
   const nitroApp = useNitroApp();
@@ -201,11 +219,16 @@ const renderer = defineRenderHandler(async (event) => {
     const url = ssrContext.url.substring(0, ssrContext.url.lastIndexOf("/")) || "/";
     ssrContext.url = url;
     event._path = event.node.req.url = url;
+    if (await payloadCache.hasItem(url)) {
+      return payloadCache.getItem(url);
+    }
   }
   const routeOptions = getRouteRules(event);
   if (routeOptions.ssr === false) {
     ssrContext.noSSR = true;
   }
+  const _PAYLOAD_EXTRACTION = !ssrContext.noSSR;
+  const payloadURL = _PAYLOAD_EXTRACTION ? joinURL(ssrContext.runtimeConfig.app.cdnURL || ssrContext.runtimeConfig.app.baseURL, ssrContext.url.replace(/\?.*$/, ""), PAYLOAD_FILENAME) + "?" + ssrContext.runtimeConfig.app.buildId : void 0;
   const renderer = await getRenderer();
   const _rendered = await renderer.renderToString(ssrContext).catch(async (error) => {
     if (ssrContext._renderResponse && error.message === "skipping render") {
@@ -225,7 +248,14 @@ const renderer = defineRenderHandler(async (event) => {
   }
   if (isRenderingPayload) {
     const response = renderPayloadResponse(ssrContext);
+    {
+      await payloadCache.setItem(ssrContext.url, response);
+    }
     return response;
+  }
+  if (_PAYLOAD_EXTRACTION) {
+    appendResponseHeader(event, "x-nitro-prerender", joinURL(ssrContext.url.replace(/\?.*$/, ""), PAYLOAD_FILENAME));
+    await payloadCache.setItem(withoutTrailingSlash(ssrContext.url), renderPayloadResponse(ssrContext));
   }
   const NO_SCRIPTS = routeOptions.noScripts;
   const { styles, scripts } = getRequestDependencies(ssrContext, renderer.rendererContext);
@@ -249,6 +279,13 @@ const renderer = defineRenderHandler(async (event) => {
         type: "importmap",
         innerHTML: JSON.stringify({ imports: { "#entry": path } })
       }]
+    }, headEntryOptions);
+  }
+  if (_PAYLOAD_EXTRACTION && !NO_SCRIPTS) {
+    ssrContext.head.push({
+      link: [
+        { rel: "preload", as: "fetch", crossorigin: "anonymous", href: payloadURL } 
+      ]
     }, headEntryOptions);
   }
   if (ssrContext._preloadManifest && !NO_SCRIPTS) {
@@ -276,7 +313,7 @@ const renderer = defineRenderHandler(async (event) => {
       link: getPrefetchLinks(ssrContext, renderer.rendererContext)
     }, headEntryOptions);
     ssrContext.head.push({
-      script: renderPayloadJsonScript({ ssrContext, data: ssrContext.payload }) 
+      script: _PAYLOAD_EXTRACTION ? renderPayloadJsonScript({ ssrContext, data: splitPayload(ssrContext).initial, src: payloadURL })  : renderPayloadJsonScript({ ssrContext, data: ssrContext.payload }) 
     }, {
       ...headEntryOptions,
       // this should come before another end of body scripts
