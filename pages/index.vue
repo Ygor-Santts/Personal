@@ -24,6 +24,13 @@
           :items="carouselItems"
           :autoplay="true"
           :autoplay-interval="4000"
+          :animation-duration="600"
+          :easing-function="'cubic-bezier(0.25, 0.46, 0.45, 0.94)'"
+          :visible-slides="3"
+          :loop-infinite="true"
+          :pause-on-hover="true"
+          :swipe-threshold="50"
+          :drag-threshold="50"
         >
           <template #side-item="{ item }">
             <div class="w-full h-full rounded-xl overflow-hidden">
@@ -153,9 +160,9 @@ const carouselItems = [
   {
     image:
       "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&crop=center",
-    alt: "Jardim paisagístico com caminhos e vegetação",
+    alt: "Montanhas ",
     tag: "PAISAGISMO",
-    title: "Jardim Paisagístico",
+    title: "Montanhas",
     description:
       "Um oásis de tranquilidade com caminhos sinuosos e vegetação cuidadosamente planejada para relaxamento.",
     actionLabel: "VISITAR",

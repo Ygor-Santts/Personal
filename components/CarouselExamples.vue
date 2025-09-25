@@ -10,6 +10,11 @@
         :height="'h-[300px]'"
         :show-content="false"
         :show-indicators="true"
+        :animation-duration="500"
+        :easing-function="'cubic-bezier(0.25, 0.46, 0.45, 0.94)'"
+        :visible-slides="3"
+        :loop-infinite="true"
+        :pause-on-hover="true"
       >
         <template #side-item="{ item }">
           <div
@@ -240,6 +245,13 @@
         :height="'h-80'"
         :show-content="true"
         :side-item-opacity="0.6"
+        :animation-duration="800"
+        :easing-function="'cubic-bezier(0.175, 0.885, 0.32, 1.275)'"
+        :visible-slides="3"
+        :loop-infinite="true"
+        :pause-on-hover="true"
+        :swipe-threshold="30"
+        :drag-threshold="30"
       >
         <template #side-item="{ item }">
           <div class="w-full h-full rounded-xl overflow-hidden">
@@ -277,6 +289,124 @@
             class="text-green-600 font-medium cursor-pointer hover:text-green-700 transition-colors"
           >
             {{ item.actionLabel }}
+          </div>
+        </template>
+      </GenericCarousel>
+    </div>
+
+    <!-- Exemplo 7: Configurações Avançadas -->
+    <div>
+      <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">
+        7. Configurações Avançadas - Loop Rápido
+      </h2>
+      <div class="mb-4 text-center text-sm text-gray-600">
+        <p>Autoplay rápido, animação suave, 5 slides visíveis</p>
+      </div>
+      <GenericCarousel
+        :items="advancedCards"
+        :height="'h-64'"
+        :show-content="false"
+        :autoplay="true"
+        :autoplay-interval="2000"
+        :animation-duration="400"
+        :easing-function="'cubic-bezier(0.68, -0.55, 0.265, 1.55)'"
+        :visible-slides="5"
+        :loop-infinite="true"
+        :pause-on-hover="true"
+        :swipe-threshold="20"
+        :drag-threshold="20"
+        :side-item-opacity="0.3"
+      >
+        <template #side-item="{ item }">
+          <div
+            :class="`w-full h-full ${item.backgroundColor} rounded-lg p-3 flex flex-col justify-center items-center text-center`"
+          >
+            <div class="w-6 h-6 bg-white rounded-full mb-2"></div>
+            <span class="text-white text-xs font-medium">{{ item.name }}</span>
+          </div>
+        </template>
+
+        <template #center-item="{ item }">
+          <div
+            :class="`w-full h-full ${item.backgroundColor} rounded-lg p-4 flex flex-col justify-center items-center text-center shadow-2xl`"
+          >
+            <div class="w-8 h-8 bg-white rounded-full mb-3"></div>
+            <span class="text-white font-bold">{{ item.name }}</span>
+            <span class="text-white text-xs opacity-90 mt-1">{{
+              item.category
+            }}</span>
+          </div>
+        </template>
+      </GenericCarousel>
+    </div>
+
+    <!-- Exemplo 8: Sem Loop - Modo Linear -->
+    <div>
+      <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">
+        8. Modo Linear (Sem Loop)
+      </h2>
+      <div class="mb-4 text-center text-sm text-gray-600">
+        <p>Navegação linear, sem loop infinito, animação lenta</p>
+      </div>
+      <GenericCarousel
+        :items="linearCards"
+        :height="'h-72'"
+        :show-content="true"
+        :autoplay="false"
+        :animation-duration="1000"
+        :easing-function="'cubic-bezier(0.25, 0.46, 0.45, 0.94)'"
+        :visible-slides="3"
+        :loop-infinite="false"
+        :pause-on-hover="false"
+        :swipe-threshold="80"
+        :drag-threshold="80"
+        :side-item-opacity="0.4"
+      >
+        <template #side-item="{ item }">
+          <div
+            :class="`w-full h-full ${item.backgroundColor} rounded-xl p-4 flex flex-col justify-center text-center`"
+          >
+            <div class="w-10 h-10 bg-white rounded-full mx-auto mb-3"></div>
+            <h4 class="text-white font-semibold">{{ item.title }}</h4>
+            <p class="text-white text-xs opacity-90 mt-1">
+              {{ item.subtitle }}
+            </p>
+          </div>
+        </template>
+
+        <template #center-item="{ item }">
+          <div
+            :class="`w-full h-full ${item.backgroundColor} rounded-xl p-6 flex flex-col justify-center text-center shadow-2xl`"
+          >
+            <div class="w-12 h-12 bg-white rounded-full mx-auto mb-4"></div>
+            <h4 class="text-white font-bold text-lg">{{ item.title }}</h4>
+            <p class="text-white text-sm opacity-90 mt-2">
+              {{ item.subtitle }}
+            </p>
+            <div class="text-white text-xs opacity-75 mt-3">
+              {{ item.category }}
+            </div>
+          </div>
+        </template>
+
+        <template #content="{ item }">
+          <div class="text-center">
+            <div
+              class="text-xs uppercase font-semibold tracking-widest text-gray-500 mb-2"
+            >
+              {{ item.category }}
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-3">
+              {{ item.title }}
+            </h2>
+            <p class="text-gray-600 mb-4">
+              {{ item.description }}
+            </p>
+            <div
+              class="text-blue-600 font-medium cursor-pointer hover:text-blue-700 transition-colors"
+            >
+              {{ item.action }}
+            </div>
           </div>
         </template>
       </GenericCarousel>
@@ -414,6 +544,97 @@ const imageCards = [
     description:
       "Um oásis de tranquilidade com caminhos sinuosos e vegetação cuidadosamente planejada para relaxamento.",
     actionLabel: "VISITAR",
+  },
+];
+
+const advancedCards = [
+  {
+    name: "React",
+    category: "FRONTEND",
+    backgroundColor: "bg-gradient-to-br from-blue-400 to-blue-600",
+  },
+  {
+    name: "Vue",
+    category: "FRONTEND",
+    backgroundColor: "bg-gradient-to-br from-green-400 to-green-600",
+  },
+  {
+    name: "Angular",
+    category: "FRONTEND",
+    backgroundColor: "bg-gradient-to-br from-red-400 to-red-600",
+  },
+  {
+    name: "Node.js",
+    category: "BACKEND",
+    backgroundColor: "bg-gradient-to-br from-yellow-400 to-yellow-600",
+  },
+  {
+    name: "Python",
+    category: "BACKEND",
+    backgroundColor: "bg-gradient-to-br from-purple-400 to-purple-600",
+  },
+  {
+    name: "TypeScript",
+    category: "LANGUAGE",
+    backgroundColor: "bg-gradient-to-br from-indigo-400 to-indigo-600",
+  },
+  {
+    name: "Docker",
+    category: "DEVOPS",
+    backgroundColor: "bg-gradient-to-br from-cyan-400 to-cyan-600",
+  },
+  {
+    name: "AWS",
+    category: "CLOUD",
+    backgroundColor: "bg-gradient-to-br from-orange-400 to-orange-600",
+  },
+];
+
+const linearCards = [
+  {
+    title: "Primeiro Passo",
+    subtitle: "Início da jornada",
+    category: "FUNDAMENTOS",
+    description:
+      "Comece sua jornada de aprendizado com os conceitos básicos e fundamentais.",
+    action: "COMEÇAR AGORA",
+    backgroundColor: "bg-gradient-to-br from-blue-500 to-blue-700",
+  },
+  {
+    title: "Desenvolvimento",
+    subtitle: "Crescimento contínuo",
+    category: "PRÁTICA",
+    description:
+      "Aplique seus conhecimentos em projetos reais e desenvolva suas habilidades.",
+    action: "VER PROJETOS",
+    backgroundColor: "bg-gradient-to-br from-green-500 to-green-700",
+  },
+  {
+    title: "Especialização",
+    subtitle: "Domínio técnico",
+    category: "AVANÇADO",
+    description:
+      "Aprofunde-se em áreas específicas e torne-se um especialista reconhecido.",
+    action: "ESPECIALIZAR-SE",
+    backgroundColor: "bg-gradient-to-br from-purple-500 to-purple-700",
+  },
+  {
+    title: "Liderança",
+    subtitle: "Influência e impacto",
+    category: "LIDERANÇA",
+    description:
+      "Lidere equipes e projetos, compartilhando conhecimento e inspirando outros.",
+    action: "LIDERAR",
+    backgroundColor: "bg-gradient-to-br from-orange-500 to-orange-700",
+  },
+  {
+    title: "Inovação",
+    subtitle: "Criação e descoberta",
+    category: "INOVAÇÃO",
+    description:
+      "Crie soluções inovadoras e contribua para o avanço da tecnologia.",
+    action: "INOVAR",
+    backgroundColor: "bg-gradient-to-br from-red-500 to-red-700",
   },
 ];
 </script>
