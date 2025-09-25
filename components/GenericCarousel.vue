@@ -264,16 +264,6 @@ const displayItems = computed(() => {
     }));
   }
 
-  watch(
-    props.items,
-    () => {
-      console.log("items changed", props.items);
-      // console.log("displayItems", displayItems.value);
-      console.log("activeItem", activeItem.value);
-      console.log("currentIndex", currentIndex.value);
-    },
-    { immediate: true }
-  );
   // Para loop infinito, criamos clones com sentinelas
   const items = [...props.items];
   const clones: any[] = [];
