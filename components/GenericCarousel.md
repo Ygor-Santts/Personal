@@ -103,7 +103,7 @@ const simpleCards = [
         class="w-full h-full bg-gradient-to-br from-gray-400 to-gray-600 rounded-xl p-6 flex flex-col justify-center items-center text-center"
       >
         <div
-          class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3"
+          class="w-12 h-12 bg-red-200 bg-opacity-20 rounded-full flex items-center justify-center mb-3"
         >
           <Icon :name="item.icon" class="w-6 h-6 text-white" />
         </div>
@@ -116,7 +116,7 @@ const simpleCards = [
         class="w-full h-full bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl p-8 flex flex-col justify-center items-center text-center"
       >
         <div
-          class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-4"
+          class="w-16 h-16 bg-red-200 bg-opacity-20 rounded-full flex items-center justify-center mb-4"
         >
           <Icon :name="item.icon" class="w-8 h-8 text-white" />
         </div>

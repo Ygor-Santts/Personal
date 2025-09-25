@@ -50,9 +50,9 @@
             class="w-full h-full bg-gradient-to-br from-gray-400 to-gray-600 rounded-xl p-6 flex flex-col justify-center items-center text-center"
           >
             <div
-              class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3"
+              class="w-12 h-12 bg-red-200 bg-opacity-20 rounded-full flex items-center justify-center mb-3"
             >
-              <div class="w-6 h-6 bg-white rounded-full"></div>
+              <div class="w-6 h-6 bg-red-200 rounded-full"></div>
             </div>
             <h4 class="text-white font-semibold">{{ item.title }}</h4>
           </div>
@@ -63,9 +63,9 @@
             class="w-full h-full bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl p-8 flex flex-col justify-center items-center text-center"
           >
             <div
-              class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-4"
+              class="w-16 h-16 bg-red-200 bg-opacity-20 rounded-full flex items-center justify-center mb-4"
             >
-              <div class="w-8 h-8 bg-white rounded-full"></div>
+              <div class="w-8 h-8 bg-red-200 rounded-full"></div>
             </div>
             <h4 class="text-white font-bold text-xl">{{ item.title }}</h4>
             <p class="text-white opacity-90 text-sm mt-2">
@@ -89,7 +89,7 @@
       >
         <template #side-item="{ item }">
           <div
-            class="w-full h-full bg-white rounded-2xl shadow-lg p-6 flex flex-col justify-center items-center text-center"
+            class="w-full h-full bg-red-200 rounded-2xl shadow-lg p-6 flex flex-col justify-center items-center text-center"
           >
             <div
               class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4"
@@ -108,9 +108,9 @@
             class="w-full h-full bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl shadow-2xl p-8 flex flex-col justify-center items-center text-center"
           >
             <div
-              class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-6"
+              class="w-20 h-20 bg-red-200 bg-opacity-20 rounded-full flex items-center justify-center mb-6"
             >
-              <div class="w-10 h-10 bg-white rounded-full"></div>
+              <div class="w-10 h-10 bg-red-200 rounded-full"></div>
             </div>
             <h3 class="text-2xl font-bold text-white mb-3">{{ item.name }}</h3>
             <p class="text-white opacity-90 mb-4">{{ item.description }}</p>
@@ -135,7 +135,7 @@
           <div
             class="w-full h-full bg-gradient-to-br from-gray-400 to-gray-600 rounded-xl p-4 flex flex-col justify-center text-center"
           >
-            <div class="w-8 h-8 bg-white rounded-full mx-auto mb-2"></div>
+            <div class="w-8 h-8 bg-red-200 rounded-full mx-auto mb-2"></div>
             <h4 class="text-white font-semibold">{{ item.title }}</h4>
           </div>
         </template>
@@ -144,7 +144,7 @@
           <div
             class="w-full h-full bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl p-6 flex flex-col justify-center text-center"
           >
-            <div class="w-12 h-12 bg-white rounded-full mx-auto mb-4"></div>
+            <div class="w-12 h-12 bg-red-200 rounded-full mx-auto mb-4"></div>
             <h4 class="text-white font-bold text-xl">{{ item.title }}</h4>
           </div>
         </template>
@@ -200,9 +200,9 @@
                 {{ item.category }}
               </div>
               <div
-                class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center"
+                class="w-8 h-8 bg-red-200 bg-opacity-20 rounded-full flex items-center justify-center"
               >
-                <div class="w-4 h-4 bg-white rounded-full"></div>
+                <div class="w-4 h-4 bg-red-200 rounded-full"></div>
               </div>
             </div>
           </div>
@@ -225,9 +225,9 @@
                 {{ item.category }}
               </div>
               <div
-                class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center"
+                class="w-8 h-8 bg-red-200 bg-opacity-20 rounded-full flex items-center justify-center"
               >
-                <div class="w-4 h-4 bg-white rounded-full"></div>
+                <div class="w-4 h-4 bg-red-200 rounded-full"></div>
               </div>
             </div>
           </div>
@@ -321,7 +321,7 @@
           <div
             :class="`w-full h-full ${item.backgroundColor} rounded-lg p-3 flex flex-col justify-center items-center text-center`"
           >
-            <div class="w-6 h-6 bg-white rounded-full mb-2"></div>
+            <div class="w-6 h-6 bg-red-200 rounded-full mb-2"></div>
             <span class="text-white text-xs font-medium">{{ item.name }}</span>
           </div>
         </template>
@@ -330,7 +330,7 @@
           <div
             :class="`w-full h-full ${item.backgroundColor} rounded-lg p-4 flex flex-col justify-center items-center text-center shadow-2xl`"
           >
-            <div class="w-8 h-8 bg-white rounded-full mb-3"></div>
+            <div class="w-8 h-8 bg-red-200 rounded-full mb-3"></div>
             <span class="text-white font-bold">{{ item.name }}</span>
             <span class="text-white text-xs opacity-90 mt-1">{{
               item.category
@@ -366,7 +366,7 @@
           <div
             :class="`w-full h-full ${item.backgroundColor} rounded-xl p-4 flex flex-col justify-center text-center`"
           >
-            <div class="w-10 h-10 bg-white rounded-full mx-auto mb-3"></div>
+            <div class="w-10 h-10 bg-red-200 rounded-full mx-auto mb-3"></div>
             <h4 class="text-white font-semibold">{{ item.title }}</h4>
             <p class="text-white text-xs opacity-90 mt-1">
               {{ item.subtitle }}
@@ -378,7 +378,7 @@
           <div
             :class="`w-full h-full ${item.backgroundColor} rounded-xl p-6 flex flex-col justify-center text-center shadow-2xl`"
           >
-            <div class="w-12 h-12 bg-white rounded-full mx-auto mb-4"></div>
+            <div class="w-12 h-12 bg-red-200 rounded-full mx-auto mb-4"></div>
             <h4 class="text-white font-bold text-lg">{{ item.title }}</h4>
             <p class="text-white text-sm opacity-90 mt-2">
               {{ item.subtitle }}
@@ -551,42 +551,42 @@ const advancedCards = [
   {
     name: "React",
     category: "FRONTEND",
-    backgroundColor: "bg-gradient-to-br from-blue-400 to-blue-600",
+    backgroundColor: "bg-blue-600",
   },
   {
     name: "Vue",
     category: "FRONTEND",
-    backgroundColor: "bg-gradient-to-br from-green-400 to-green-600",
+    backgroundColor: "bg-green-300",
   },
   {
     name: "Angular",
     category: "FRONTEND",
-    backgroundColor: "bg-gradient-to-br from-red-400 to-red-600",
+    backgroundColor: "bg-red-400",
   },
   {
     name: "Node.js",
     category: "BACKEND",
-    backgroundColor: "bg-gradient-to-br from-yellow-400 to-yellow-600",
+    backgroundColor: "bg-yellow-600",
   },
   {
     name: "Python",
     category: "BACKEND",
-    backgroundColor: "bg-gradient-to-br from-purple-400 to-purple-600",
+    backgroundColor: "bg-purple-600",
   },
   {
     name: "TypeScript",
     category: "LANGUAGE",
-    backgroundColor: "bg-gradient-to-br from-indigo-400 to-indigo-600",
+    backgroundColor: "bg-purple-600",
   },
   {
     name: "Docker",
     category: "DEVOPS",
-    backgroundColor: "bg-gradient-to-br from-cyan-400 to-cyan-600",
+    backgroundColor: "bg-red-600",
   },
   {
     name: "AWS",
     category: "CLOUD",
-    backgroundColor: "bg-gradient-to-br from-orange-400 to-orange-600",
+    backgroundColor: "bg-green-400 to-green-600",
   },
 ];
 

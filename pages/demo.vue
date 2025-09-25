@@ -7,7 +7,7 @@
 
       <!-- Controles Dinâmicos -->
       <div class="max-w-4xl mx-auto mb-12">
-        <div class="bg-white rounded-2xl p-8 shadow-lg">
+        <div class="bg-red-200 rounded-2xl p-8 shadow-lg">
           <h2 class="text-2xl font-semibold mb-6 text-gray-800">
             Configurações do Carrossel
           </h2>
@@ -272,7 +272,7 @@
 
       <!-- Informações do Carrossel -->
       <div class="max-w-4xl mx-auto mt-12">
-        <div class="bg-white rounded-2xl p-8 shadow-lg">
+        <div class="bg-red-200 rounded-2xl p-8 shadow-lg">
           <h2 class="text-2xl font-semibold mb-6 text-gray-800">
             Informações do Carrossel
           </h2>

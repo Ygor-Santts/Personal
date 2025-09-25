@@ -67,7 +67,7 @@
         <!-- Setas de navegação -->
         <button
           v-if="showArrows"
-          class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white bg-opacity-90 rounded-full shadow-lg hover:bg-opacity-100 z-30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-red-200 bg-opacity-90 rounded-full shadow-lg hover:bg-opacity-100 z-30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           @click.stop="prevSlide"
           :disabled="isTransitioning"
           aria-label="Slide anterior"
@@ -88,7 +88,7 @@
         </button>
         <button
           v-if="showArrows"
-          class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white bg-opacity-90 rounded-full shadow-lg hover:bg-opacity-100 z-30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-red-200 bg-opacity-90 rounded-full shadow-lg hover:bg-opacity-100 z-30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           @click.stop="nextSlide"
           :disabled="isTransitioning"
           aria-label="Próximo slide"

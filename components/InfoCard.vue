@@ -12,7 +12,7 @@
     <div class="flex items-center justify-between">
       <div class="text-xs text-white opacity-75">{{ category }}</div>
       <div
-        class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center"
+        class="w-8 h-8 bg-red-200 bg-opacity-20 rounded-full flex items-center justify-center"
       >
         <Icon :name="icon" class="w-4 h-4 text-white" />
       </div>

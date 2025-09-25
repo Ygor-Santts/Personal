@@ -87,7 +87,7 @@
           Controles de Demonstração
         </h2>
 
-        <div class="bg-white rounded-2xl p-8 shadow-lg">
+        <div class="bg-red-200 rounded-2xl p-8 shadow-lg">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
               <h3 class="font-semibold text-gray-700 mb-4">
