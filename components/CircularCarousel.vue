@@ -7,11 +7,6 @@
       role="region"
       aria-roledescription="carousel"
       aria-live="polite"
-      @touchstart="handleTouchStart"
-      @touchmove="handleTouchMove"
-      @touchend="handleTouchEnd"
-      @mousedown="handleMouseDown"
-      @mouseleave="handleMouseLeave"
       :style="{
         cursor: isDragging ? 'grabbing' : 'grab',
         userSelect: 'none',
@@ -34,6 +29,7 @@
               ? `transform ${transitionMs}ms ${ease}`
               : 'none',
           width: `${totalWidth}px`,
+          willChange: 'transform',
         }"
       >
         <!-- Clones para loop infinito -->
@@ -41,18 +37,25 @@
           v-for="(item, index) in displayItems"
           :key="`${item.originalIndex}-${index}`"
           :class="`carousel-slide h-full flex-shrink-0 `"
-          :style="{ width: `${slideWidthPx}px` }"
+          :style="{
+            width: `${slideWidthPx}px`,
+            opacity: getSlideOpacity(index),
+            transform: getSlideTransform(index),
+            position: 'relative',
+            zIndex: index === centerIndex ? 99 : -99,
+          }"
           role="group"
           :aria-label="`Slide ${item.originalIndex + 1} de ${items.length}`"
+          @touchstart="handleItemTouchStart($event, index)"
+          @touchmove="handleItemTouchMove($event, index)"
+          @touchend="handleItemTouchEnd($event, index)"
+          @mousedown="handleItemMouseDown($event, index)"
+          @mouseleave="handleItemMouseLeave($event, index)"
         >
           <div
-            :class="`w-full h-full rounded-xl sm:rounded-2xl overflow-hidden  transition-all duration-500 ease-out ${
-              index === centerIndex ? 'shadow-2xl z-20' : 'z-0'
+            :class="`w-full h-full rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-700 ease-out ${
+              index === centerIndex ? 'shadow-2xl' : ''
             }`"
-            :style="{
-              opacity: getSlideOpacity(index),
-              transform: getSlideTransform(index),
-            }"
           >
             <slot
               :name="index === centerIndex ? 'center-item' : 'side-item'"
@@ -166,12 +169,12 @@ const props = withDefaults(defineProps<Props>(), {
   showIndicators: true,
   autoplay: false,
   autoplayInterval: 3000,
-  transitionMs: 320,
-  ease: "cubic-bezier(0.22, 0.61, 0.36, 1)",
+  transitionMs: 500,
+  ease: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
   pauseOnHover: true,
-  swipeThreshold: 50,
-  dragThreshold: 10,
-  clonesPerSide: 5,
+  swipeThreshold: 30,
+  dragThreshold: 5,
+  clonesPerSide: 1, // Reduzido para 1 já que sempre exibimos 3 itens
 });
 
 // Estados reativos
@@ -220,24 +223,37 @@ const displayItems = computed(() => {
     originalIndex: index,
   }));
 
-  const clonesPerSide = props.clonesPerSide;
   const totalItems = items.length;
   const allItems: any[] = [];
 
-  // Criar clones suficientes para formar o círculo
+  // Sempre exibir apenas 3 itens: anterior, atual, próximo
   const currentIdx = currentIndex.value;
 
-  for (let i = -clonesPerSide; i <= clonesPerSide; i++) {
-    // Calcular o índice do item original baseado na posição circular
-    let itemIndex = (((currentIdx + i) % totalItems) + totalItems) % totalItems;
+  // Item anterior
+  const prevIndex = currentIdx === 0 ? totalItems - 1 : currentIdx - 1;
+  allItems.push({
+    ...items[prevIndex],
+    originalIndex: prevIndex,
+    cloneIndex: 0,
+    globalIndex: -1,
+  });
 
-    allItems.push({
-      ...items[itemIndex],
-      originalIndex: itemIndex,
-      cloneIndex: i + clonesPerSide,
-      globalIndex: i,
-    });
-  }
+  // Item atual (centro)
+  allItems.push({
+    ...items[currentIdx],
+    originalIndex: currentIdx,
+    cloneIndex: 1,
+    globalIndex: 0,
+  });
+
+  // Item próximo
+  const nextIndex = (currentIdx + 1) % totalItems;
+  allItems.push({
+    ...items[nextIndex],
+    originalIndex: nextIndex,
+    cloneIndex: 2,
+    globalIndex: 1,
+  });
 
   return allItems;
 });
@@ -247,8 +263,8 @@ const centerIndex = computed(() => {
   if (!props.loopInfinite || props.items.length <= 1) {
     return currentIndex.value;
   }
-  // O centro sempre está no meio do array displayItems (clonesPerSide)
-  return props.clonesPerSide;
+  // O centro sempre está no índice 1 do array displayItems (3 itens: 0, 1, 2)
+  return 1;
 });
 
 // Função para calcular opacidade do slide (baseado no Swiper)
@@ -260,35 +276,39 @@ const getSlideOpacity = (index: number) => {
 
   const centerIdx = centerIndex.value;
   const distance = Math.abs(index - centerIdx);
-  const maxDistance = props.clonesPerSide;
 
-  // Calcular opacidade com transição mais suave
+  // Com apenas 3 itens, temos: 0 (anterior), 1 (centro), 2 (próximo)
   if (distance === 0) return 1; // Centro sempre 100% opaco
-  if (distance === 1) return 0.8; // Adjacentes 80% opacos
-  if (distance === 2) return 0.6; // Próximos 60% opacos
-  if (distance === 3) return 0.4; // Distantes 40% opacos
+  if (distance === 1) return 0.6; // Itens laterais 60% opacos
 
-  // Para distâncias maiores, fade mais gradual
-  return Math.max(0.2, 1 - (distance / maxDistance) * 0.8);
+  return 0.6; // Fallback para itens laterais
 };
 
-// Função para calcular transformação do slide (baseado no Swiper)
+// Função para calcular transformação do slide com efeito de profundidade
 const getSlideTransform = (index: number) => {
   if (!props.loopInfinite || props.items.length <= 1) {
     const isActive = index === currentIndex.value;
-    return `scale(${isActive ? 1 : 0.8})`;
+    return `scale(${isActive ? 1 : 0.7})`;
   }
 
   const centerIdx = centerIndex.value;
-  const distance = Math.abs(index - centerIdx);
+  const distance = index - centerIdx; // Usar diferença com sinal para determinar direção
 
-  // Calcular escala com transições mais suaves e graduais
-  if (distance === 0) return `scale(1)`; // Centro sempre escala 1
-  if (distance === 1) return `scale(0.9)`; // Adjacentes 90%
-  if (distance === 2) return `scale(0.8)`; // Próximos 80%
-  if (distance === 3) return `scale(0.7)`; // Distantes 70%
-  if (distance === 4) return `scale(0.65)`; // Mais distantes 65%
-  if (distance >= 5) return `scale(0.6)`; // Muito distantes 60%
+  // Item central - na frente
+  if (distance === 0) {
+    return `scale(1)`;
+  }
+
+  // Qualquer item que não esteja no centro - atrás e deslocado
+  // Itens à direita do centro
+  if (distance > 0) {
+    return `scale(0.7) translateX(-200px)`;
+  }
+
+  // Itens à esquerda do centro
+  if (distance < 0) {
+    return `scale(0.7) translateX(200px)`;
+  }
 
   return `scale(1)`;
 };
@@ -299,9 +319,9 @@ const calculateDimensions = () => {
 
   const wrapperWidth = carouselWrapper.value.offsetWidth;
   slideWidthPx.value = wrapperWidth / props.visibleSlides;
-  totalWidth.value = displayItems.value.length * slideWidthPx.value;
+  totalWidth.value = 3 * slideWidthPx.value; // Sempre 3 itens
 
-  // Reposicionar para o slide atual
+  // Reposicionar para o slide atual (centro sempre no meio)
   const centerOffset = Math.floor(props.visibleSlides / 2);
   baseTranslateX.value =
     -(centerIndex.value * slideWidthPx.value) +
@@ -317,10 +337,10 @@ const roundToNearest = (value: number, nearest: number = 1) => {
 // Função para calcular o snap automático baseado na posição do drag
 const calculateSnapPosition = (dragDistance: number) => {
   const slideWidth = slideWidthPx.value;
-  const threshold = slideWidth * 0.3; // 30% do slide para ativar snap
+  const threshold = slideWidth * 0.2; // 20% do slide para ativar snap (reduzido)
 
-  // Calcular quantos slides o usuário moveu
-  const slideOffset = Math.round(dragDistance / slideWidth);
+  // Calcular quantos slides o usuário moveu - INVERTER A DIREÇÃO
+  const slideOffset = Math.round(-dragDistance / slideWidth); // Inverter com sinal negativo
 
   // Determinar direção baseada na velocidade e distância
   if (Math.abs(dragDistance) > threshold || Math.abs(velocity.value) > 0.3) {
@@ -458,9 +478,9 @@ const handleTouchMove = (event: TouchEvent) => {
     velocity.value = deltaX / deltaTime;
   }
 
-  // Atualizar offset do drag em tempo real
+  // Atualizar offset do drag em tempo real com suavização
   const totalDragDistance = currentX.value - startX.value;
-  dragOffset.value = totalDragDistance;
+  dragOffset.value = totalDragDistance * 0.8; // Suavizar o movimento durante drag
 
   lastMoveX.value = currentX.value;
 };
@@ -535,9 +555,9 @@ const handleMouseMove = (event: MouseEvent) => {
     velocity.value = deltaX / deltaTime;
   }
 
-  // Atualizar offset do drag em tempo real
+  // Atualizar offset do drag em tempo real com suavização
   const totalDragDistance = currentX.value - startX.value;
-  dragOffset.value = totalDragDistance;
+  dragOffset.value = totalDragDistance * 0.8; // Suavizar o movimento durante drag
 
   lastMoveX.value = currentX.value;
 };
@@ -590,6 +610,175 @@ const handleMouseLeave = () => {
   }
 };
 
+// Novas funções de drag para itens individuais
+const handleItemTouchStart = (event: TouchEvent, itemIndex: number) => {
+  if (isTransitioning.value) return;
+
+  isDragging.value = true;
+  startX.value = event.touches[0].clientX;
+  currentX.value = startX.value;
+  lastMoveX.value = startX.value;
+  startTime.value = Date.now();
+  velocity.value = 0;
+  dragOffset.value = 0;
+  baseTranslateX.value = translateX.value;
+
+  stopAutoplay();
+};
+
+const handleItemTouchMove = (event: TouchEvent, itemIndex: number) => {
+  if (!isDragging.value || isTransitioning.value) return;
+
+  event.preventDefault();
+  currentX.value = event.touches[0].clientX;
+  const deltaX = currentX.value - lastMoveX.value;
+  const deltaTime = Date.now() - startTime.value;
+
+  if (deltaTime > 0) {
+    velocity.value = deltaX / deltaTime;
+  }
+
+  // Atualizar offset do drag em tempo real com suavização
+  const totalDragDistance = currentX.value - startX.value;
+  dragOffset.value = totalDragDistance * 0.8; // Suavizar o movimento durante drag
+
+  lastMoveX.value = currentX.value;
+};
+
+const handleItemTouchEnd = (event: TouchEvent, itemIndex: number) => {
+  if (!isDragging.value || isTransitioning.value) return;
+
+  isDragging.value = false;
+  const deltaX = currentX.value - startX.value;
+  const deltaTime = Date.now() - startTime.value;
+
+  if (deltaTime > 0) {
+    velocity.value = deltaX / deltaTime;
+  }
+
+  // Calcular quantos slides mover baseado no snap
+  const slideOffset = calculateSnapPosition(deltaX);
+
+  if (slideOffset !== 0) {
+    // Navegar para o slide calculado
+    const targetIndex = currentIndex.value + slideOffset;
+    if (props.loopInfinite) {
+      const newIndex =
+        ((targetIndex % props.items.length) + props.items.length) %
+        props.items.length;
+      animateToSlide(newIndex, slideOffset > 0 ? 1 : -1);
+    } else {
+      const newIndex = Math.max(
+        0,
+        Math.min(targetIndex, props.items.length - 1)
+      );
+      if (newIndex !== currentIndex.value) {
+        animateToSlide(newIndex, slideOffset > 0 ? 1 : -1);
+      }
+    }
+  }
+
+  // Reset do offset do drag
+  dragOffset.value = 0;
+
+  // Reiniciar autoplay se habilitado
+  if (props.autoplay) {
+    startAutoplay();
+  }
+};
+
+const handleItemMouseDown = (event: MouseEvent, itemIndex: number) => {
+  if (isTransitioning.value) return;
+
+  event.preventDefault();
+  isDragging.value = true;
+  startX.value = event.clientX;
+  currentX.value = startX.value;
+  lastMoveX.value = startX.value;
+  startTime.value = Date.now();
+  velocity.value = 0;
+  dragOffset.value = 0;
+  baseTranslateX.value = translateX.value;
+
+  stopAutoplay();
+};
+
+const handleItemMouseMove = (event: MouseEvent, itemIndex: number) => {
+  if (!isDragging.value || isTransitioning.value) return;
+
+  event.preventDefault();
+  currentX.value = event.clientX;
+  const deltaX = currentX.value - lastMoveX.value;
+  const deltaTime = Date.now() - startTime.value;
+
+  if (deltaTime > 0) {
+    velocity.value = deltaX / deltaTime;
+  }
+
+  // Atualizar offset do drag em tempo real com suavização
+  const totalDragDistance = currentX.value - startX.value;
+  dragOffset.value = totalDragDistance * 0.8; // Suavizar o movimento durante drag
+
+  lastMoveX.value = currentX.value;
+};
+
+const handleItemMouseUp = (event: MouseEvent, itemIndex: number) => {
+  if (!isDragging.value || isTransitioning.value) return;
+
+  isDragging.value = false;
+  const deltaX = currentX.value - startX.value;
+  const deltaTime = Date.now() - startTime.value;
+
+  if (deltaTime > 0) {
+    velocity.value = deltaX / deltaTime;
+  }
+
+  // Calcular quantos slides mover baseado no snap
+  const slideOffset = calculateSnapPosition(deltaX);
+
+  if (slideOffset !== 0) {
+    // Navegar para o slide calculado
+    const targetIndex = currentIndex.value + slideOffset;
+    if (props.loopInfinite) {
+      const newIndex =
+        ((targetIndex % props.items.length) + props.items.length) %
+        props.items.length;
+      animateToSlide(newIndex, slideOffset > 0 ? 1 : -1);
+    } else {
+      const newIndex = Math.max(
+        0,
+        Math.min(targetIndex, props.items.length - 1)
+      );
+      if (newIndex !== currentIndex.value) {
+        animateToSlide(newIndex, slideOffset > 0 ? 1 : -1);
+      }
+    }
+  }
+
+  // Reset do offset do drag
+  dragOffset.value = 0;
+
+  // Reiniciar autoplay se habilitado
+  if (props.autoplay) {
+    startAutoplay();
+  }
+};
+
+const handleItemMouseLeave = (event: MouseEvent, itemIndex: number) => {
+  if (isDragging.value) {
+    handleItemMouseUp(new MouseEvent("mouseup"), itemIndex);
+  }
+};
+
+// Wrapper functions para event listeners globais
+const handleGlobalMouseMove = (event: MouseEvent) => {
+  handleItemMouseMove(event, 0);
+};
+
+const handleGlobalMouseUp = (event: MouseEvent) => {
+  handleItemMouseUp(event, 0);
+};
+
 // Função de teclado
 const handleKeydown = (event: KeyboardEvent) => {
   if (isTransitioning.value) return;
@@ -629,8 +818,8 @@ onMounted(async () => {
 
   // Event listeners
   document.addEventListener("keydown", handleKeydown);
-  document.addEventListener("mousemove", handleMouseMove);
-  document.addEventListener("mouseup", handleMouseUp);
+  document.addEventListener("mousemove", handleGlobalMouseMove);
+  document.addEventListener("mouseup", handleGlobalMouseUp);
 
   // ResizeObserver para recalcular dimensões
   resizeObserver = new ResizeObserver(() => {
@@ -655,8 +844,8 @@ onMounted(async () => {
 onUnmounted(() => {
   stopAutoplay();
   document.removeEventListener("keydown", handleKeydown);
-  document.removeEventListener("mousemove", handleMouseMove);
-  document.removeEventListener("mouseup", handleMouseUp);
+  document.removeEventListener("mousemove", handleGlobalMouseMove);
+  document.removeEventListener("mouseup", handleGlobalMouseUp);
 
   if (resizeObserver) {
     resizeObserver.disconnect();
@@ -737,12 +926,14 @@ defineExpose({
   backface-visibility: hidden;
   perspective: 1000px;
   transform-style: preserve-3d;
+  transform: translateZ(0);
 }
 
 .carousel-track[data-transitioning="true"] {
-  transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  transition: transform 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
+/* Transições suaves para os itens individuais */
 .carousel-slide {
   display: flex;
   align-items: center;
@@ -750,11 +941,14 @@ defineExpose({
   will-change: transform, opacity;
   backface-visibility: hidden;
   transform-style: preserve-3d;
+  transform: translateZ(0);
+  transition: transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .carousel-slide > div {
-  transition: opacity 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
-    transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  transition: opacity 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 /* Efeitos de drag ativo - desabilita transições durante drag */

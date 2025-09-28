@@ -24,11 +24,11 @@
             :autoplay="false"
             :autoplay-interval="4000"
             :clones-per-side="5"
-            :transition-ms="320"
-            :ease="'cubic-bezier(0.22, 0.61, 0.36, 1)'"
+            :transition-ms="500"
+            :ease="'cubic-bezier(0.25, 0.46, 0.45, 0.94)'"
             :pause-on-hover="true"
-            :swipe-threshold="30"
-            :drag-threshold="30"
+            :swipe-threshold="20"
+            :drag-threshold="10"
             class="h-full"
           >
             <template #center-item="{ item }">
