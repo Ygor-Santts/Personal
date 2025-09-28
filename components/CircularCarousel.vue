@@ -24,10 +24,6 @@
         :data-transitioning="isTransitioning"
         :style="{
           transform: `translate3d(${translateX + dragOffset}px, 0, 0)`,
-          transition:
-            isTransitioning && !isDragging
-              ? `transform ${transitionMs}ms ${ease}`
-              : 'none',
           width: `${totalWidth}px`,
           willChange: 'transform',
         }"
@@ -36,7 +32,9 @@
         <div
           v-for="(item, index) in displayItems"
           :key="`${item.originalIndex}-${index}`"
-          :class="`carousel-slide h-full flex-shrink-0 `"
+          :class="`carousel-slide h-full flex-shrink-0 ${
+            isTransitioning && !isDragging ? 'carousel-slide-transitioning' : ''
+          }`"
           :style="{
             width: `${slideWidthPx}px`,
             opacity: getSlideOpacity(index),
@@ -436,7 +434,7 @@ const animateToSlide = (targetIndex: number, direction: number) => {
   // Recalcular posição
   calculateDimensions();
 
-  // Verificar se precisa reposicionar (para loop infinito)
+  // Aguardar a transição dos itens individuais terminar
   setTimeout(() => {
     if (props.loopInfinite && props.items.length > 1) {
       checkAndReposition();
@@ -1000,9 +998,7 @@ defineExpose({
   transform: translateZ(0);
 }
 
-.carousel-track[data-transitioning="true"] {
-  transition: transform 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
+/* Carousel track não precisa de transição - movimentos são instantâneos */
 
 /* Transições suaves para os itens individuais */
 .carousel-slide {
@@ -1013,8 +1009,13 @@ defineExpose({
   backface-visibility: hidden;
   transform-style: preserve-3d;
   transform: translateZ(0);
-  transition: transform 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-    opacity 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: none; /* Transições desabilitadas por padrão */
+}
+
+/* Aplicar transições apenas durante navegação por setas */
+.carousel-slide-transitioning {
+  transition: transform 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
 }
 
 /* Desabilitar transições durante drag individual */
