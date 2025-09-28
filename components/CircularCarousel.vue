@@ -195,6 +195,11 @@ const startTime = ref(0);
 const dragOffset = ref(0);
 const baseTranslateX = ref(0);
 
+// Estados para drag individual dos itens
+const draggedItemIndex = ref(-1);
+const itemDragOffset = ref(0);
+const isItemDragging = ref(false);
+
 // Referências DOM
 const carouselWrapper = ref<HTMLElement | null>(null);
 const carouselTrack = ref<HTMLElement | null>(null);
@@ -294,23 +299,29 @@ const getSlideTransform = (index: number) => {
   const centerIdx = centerIndex.value;
   const distance = index - centerIdx; // Usar diferença com sinal para determinar direção
 
+  // Calcular offset individual durante drag
+  let individualOffset = 0;
+  if (isItemDragging.value && draggedItemIndex.value === index) {
+    individualOffset = itemDragOffset.value;
+  }
+
   // Item central - na frente
   if (distance === 0) {
-    return `scale(1)`;
+    return `scale(1) translateX(${individualOffset}px)`;
   }
 
   // Qualquer item que não esteja no centro - atrás e deslocado
   // Itens à direita do centro
   if (distance > 0) {
-    return `scale(0.7) translateX(-200px)`;
+    return `scale(0.7) translateX(${-200 + individualOffset}px)`;
   }
 
   // Itens à esquerda do centro
   if (distance < 0) {
-    return `scale(0.7) translateX(200px)`;
+    return `scale(0.7) translateX(${200 + individualOffset}px)`;
   }
 
-  return `scale(1)`;
+  return `scale(1) translateX(${individualOffset}px)`;
 };
 
 // Função para calcular dimensões
@@ -392,8 +403,11 @@ const animateToSlide = (targetIndex: number, direction: number) => {
   isTransitioning.value = true;
   currentIndex.value = targetIndex;
 
-  // Reset do offset do drag antes da animação
+  // Reset dos offsets do drag antes da animação
   dragOffset.value = 0;
+  itemDragOffset.value = 0;
+  isItemDragging.value = false;
+  draggedItemIndex.value = -1;
 
   // Recalcular posição
   calculateDimensions();
@@ -614,6 +628,11 @@ const handleMouseLeave = () => {
 const handleItemTouchStart = (event: TouchEvent, itemIndex: number) => {
   if (isTransitioning.value) return;
 
+  // Configurar drag individual do item
+  isItemDragging.value = true;
+  draggedItemIndex.value = itemIndex;
+  itemDragOffset.value = 0;
+
   isDragging.value = true;
   startX.value = event.touches[0].clientX;
   currentX.value = startX.value;
@@ -627,7 +646,8 @@ const handleItemTouchStart = (event: TouchEvent, itemIndex: number) => {
 };
 
 const handleItemTouchMove = (event: TouchEvent, itemIndex: number) => {
-  if (!isDragging.value || isTransitioning.value) return;
+  if (!isDragging.value || isTransitioning.value || !isItemDragging.value)
+    return;
 
   event.preventDefault();
   currentX.value = event.touches[0].clientX;
@@ -638,9 +658,12 @@ const handleItemTouchMove = (event: TouchEvent, itemIndex: number) => {
     velocity.value = deltaX / deltaTime;
   }
 
-  // Atualizar offset do drag em tempo real com suavização
+  // Atualizar offset individual do item com suavização
   const totalDragDistance = currentX.value - startX.value;
-  dragOffset.value = totalDragDistance * 0.8; // Suavizar o movimento durante drag
+  itemDragOffset.value = totalDragDistance * 0.6; // Suavizar mais o movimento individual
+
+  // Manter offset global mínimo para feedback visual
+  dragOffset.value = totalDragDistance * 0.1;
 
   lastMoveX.value = currentX.value;
 };
@@ -649,6 +672,8 @@ const handleItemTouchEnd = (event: TouchEvent, itemIndex: number) => {
   if (!isDragging.value || isTransitioning.value) return;
 
   isDragging.value = false;
+  isItemDragging.value = false;
+
   const deltaX = currentX.value - startX.value;
   const deltaTime = Date.now() - startTime.value;
 
@@ -678,8 +703,10 @@ const handleItemTouchEnd = (event: TouchEvent, itemIndex: number) => {
     }
   }
 
-  // Reset do offset do drag
+  // Reset dos offsets
   dragOffset.value = 0;
+  itemDragOffset.value = 0;
+  draggedItemIndex.value = -1;
 
   // Reiniciar autoplay se habilitado
   if (props.autoplay) {
@@ -691,6 +718,12 @@ const handleItemMouseDown = (event: MouseEvent, itemIndex: number) => {
   if (isTransitioning.value) return;
 
   event.preventDefault();
+
+  // Configurar drag individual do item
+  isItemDragging.value = true;
+  draggedItemIndex.value = itemIndex;
+  itemDragOffset.value = 0;
+
   isDragging.value = true;
   startX.value = event.clientX;
   currentX.value = startX.value;
@@ -704,7 +737,8 @@ const handleItemMouseDown = (event: MouseEvent, itemIndex: number) => {
 };
 
 const handleItemMouseMove = (event: MouseEvent, itemIndex: number) => {
-  if (!isDragging.value || isTransitioning.value) return;
+  if (!isDragging.value || isTransitioning.value || !isItemDragging.value)
+    return;
 
   event.preventDefault();
   currentX.value = event.clientX;
@@ -715,9 +749,12 @@ const handleItemMouseMove = (event: MouseEvent, itemIndex: number) => {
     velocity.value = deltaX / deltaTime;
   }
 
-  // Atualizar offset do drag em tempo real com suavização
+  // Atualizar offset individual do item com suavização
   const totalDragDistance = currentX.value - startX.value;
-  dragOffset.value = totalDragDistance * 0.8; // Suavizar o movimento durante drag
+  itemDragOffset.value = totalDragDistance * 0.6; // Suavizar mais o movimento individual
+
+  // Manter offset global mínimo para feedback visual
+  dragOffset.value = totalDragDistance * 0.1;
 
   lastMoveX.value = currentX.value;
 };
@@ -726,6 +763,8 @@ const handleItemMouseUp = (event: MouseEvent, itemIndex: number) => {
   if (!isDragging.value || isTransitioning.value) return;
 
   isDragging.value = false;
+  isItemDragging.value = false;
+
   const deltaX = currentX.value - startX.value;
   const deltaTime = Date.now() - startTime.value;
 
@@ -755,8 +794,10 @@ const handleItemMouseUp = (event: MouseEvent, itemIndex: number) => {
     }
   }
 
-  // Reset do offset do drag
+  // Reset dos offsets
   dragOffset.value = 0;
+  itemDragOffset.value = 0;
+  draggedItemIndex.value = -1;
 
   // Reiniciar autoplay se habilitado
   if (props.autoplay) {
@@ -942,8 +983,13 @@ defineExpose({
   backface-visibility: hidden;
   transform-style: preserve-3d;
   transform: translateZ(0);
-  transition: transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-    opacity 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: transform 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Desabilitar transições durante drag individual */
+.carousel-dragging .carousel-slide {
+  transition: none !important;
 }
 
 .carousel-slide > div {
