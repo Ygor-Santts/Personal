@@ -3,7 +3,7 @@
     <!-- Carrossel wrapper -->
     <div
       ref="carouselWrapper"
-      class="carousel-wrapper"
+      :class="`carousel-wrapper ${isDragging ? 'carousel-dragging' : ''}`"
       role="region"
       aria-roledescription="carousel"
       aria-live="polite"
@@ -28,10 +28,11 @@
         class="carousel-track"
         :data-transitioning="isTransitioning"
         :style="{
-          transform: `translate3d(${translateX}px, 0, 0)`,
-          transition: isTransitioning
-            ? `transform ${transitionMs}ms ${ease}`
-            : 'none',
+          transform: `translate3d(${translateX + dragOffset}px, 0, 0)`,
+          transition:
+            isTransitioning && !isDragging
+              ? `transform ${transitionMs}ms ${ease}`
+              : 'none',
           width: `${totalWidth}px`,
         }"
       >
@@ -39,21 +40,18 @@
         <div
           v-for="(item, index) in displayItems"
           :key="`${item.originalIndex}-${index}`"
-          :class="`carousel-slide h-full flex-shrink-0`"
+          :class="`carousel-slide h-full flex-shrink-0 `"
           :style="{ width: `${slideWidthPx}px` }"
           role="group"
           :aria-label="`Slide ${item.originalIndex + 1} de ${items.length}`"
         >
           <div
-            :class="`w-full h-full rounded-xl sm:rounded-2xl overflow-hidden ${
+            :class="`w-full h-full rounded-xl sm:rounded-2xl overflow-hidden  transition-all duration-500 ease-out ${
               index === centerIndex ? 'shadow-2xl z-20' : 'z-0'
             }`"
             :style="{
               opacity: getSlideOpacity(index),
               transform: getSlideTransform(index),
-              transition: isTransitioning
-                ? `opacity ${transitionMs}ms ${ease}, transform ${transitionMs}ms ${ease}`
-                : 'opacity 0.3s ease, transform 0.3s ease',
             }"
           >
             <slot
@@ -70,13 +68,13 @@
     <!-- Controles de navegação -->
     <button
       v-if="showArrows"
-      class="nav-button nav-button-prev"
+      class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white bg-opacity-90 rounded-full shadow-lg hover:bg-opacity-100 z-30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
       @click.stop="prevSlide"
       :disabled="isTransitioning"
       aria-label="Slide anterior"
     >
       <svg
-        class="nav-icon"
+        class="w-4 h-4 sm:w-5 sm:h-5 text-gray-700"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -92,13 +90,13 @@
 
     <button
       v-if="showArrows"
-      class="nav-button nav-button-next"
+      class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white bg-opacity-90 rounded-full shadow-lg hover:bg-opacity-100 z-30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
       @click.stop="nextSlide"
       :disabled="isTransitioning"
       aria-label="Próximo slide"
     >
       <svg
-        class="nav-icon"
+        class="w-4 h-4 sm:w-5 sm:h-5 text-gray-700"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -113,15 +111,26 @@
     </button>
 
     <!-- Indicadores -->
-    <div v-if="showIndicators" class="indicators">
-      <button
-        v-for="(item, index) in items"
-        :key="index"
-        class="indicator"
-        :class="{ active: index === currentIndex }"
-        @click="goToSlide(index)"
-        :aria-label="`Ir para slide ${index + 1}`"
-      />
+    <div
+      v-if="showIndicators"
+      class="flex items-center justify-center space-x-3 sm:space-x-4 pb-4 sm:pb-6 mt-4"
+    >
+      <div
+        class="flex items-center space-x-2 bg-white bg-opacity-90 rounded-full px-3 py-2"
+      >
+        <button
+          v-for="(item, index) in items"
+          :key="index"
+          @click="goToSlide(index)"
+          :class="[
+            'transition-all duration-300 ease-out',
+            currentIndex === index
+              ? 'w-6 h-2 rounded-full bg-blue-600'
+              : 'w-2 h-2 rounded-full bg-gray-300 hover:bg-gray-400',
+          ]"
+          :aria-label="`Ir para slide ${index + 1}`"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -157,8 +166,8 @@ const props = withDefaults(defineProps<Props>(), {
   showIndicators: true,
   autoplay: false,
   autoplayInterval: 3000,
-  transitionMs: 800,
-  ease: "cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+  transitionMs: 320,
+  ease: "cubic-bezier(0.22, 0.61, 0.36, 1)",
   pauseOnHover: true,
   swipeThreshold: 50,
   dragThreshold: 10,
@@ -180,6 +189,8 @@ const currentX = ref(0);
 const lastMoveX = ref(0);
 const velocity = ref(0);
 const startTime = ref(0);
+const dragOffset = ref(0);
+const baseTranslateX = ref(0);
 
 // Referências DOM
 const carouselWrapper = ref<HTMLElement | null>(null);
@@ -292,14 +303,31 @@ const calculateDimensions = () => {
 
   // Reposicionar para o slide atual
   const centerOffset = Math.floor(props.visibleSlides / 2);
-  translateX.value =
+  baseTranslateX.value =
     -(centerIndex.value * slideWidthPx.value) +
     centerOffset * slideWidthPx.value;
+  translateX.value = baseTranslateX.value;
 };
 
 // Função para arredondar para o pixel mais próximo
 const roundToNearest = (value: number, nearest: number = 1) => {
   return Math.round(value / nearest) * nearest;
+};
+
+// Função para calcular o snap automático baseado na posição do drag
+const calculateSnapPosition = (dragDistance: number) => {
+  const slideWidth = slideWidthPx.value;
+  const threshold = slideWidth * 0.3; // 30% do slide para ativar snap
+
+  // Calcular quantos slides o usuário moveu
+  const slideOffset = Math.round(dragDistance / slideWidth);
+
+  // Determinar direção baseada na velocidade e distância
+  if (Math.abs(dragDistance) > threshold || Math.abs(velocity.value) > 0.3) {
+    return slideOffset;
+  }
+
+  return 0; // Não mover se não atingir o threshold
 };
 
 // Funções de navegação
@@ -343,6 +371,9 @@ const animateToSlide = (targetIndex: number, direction: number) => {
 
   isTransitioning.value = true;
   currentIndex.value = targetIndex;
+
+  // Reset do offset do drag antes da animação
+  dragOffset.value = 0;
 
   // Recalcular posição
   calculateDimensions();
@@ -409,6 +440,8 @@ const handleTouchStart = (event: TouchEvent) => {
   lastMoveX.value = startX.value;
   startTime.value = Date.now();
   velocity.value = 0;
+  dragOffset.value = 0;
+  baseTranslateX.value = translateX.value;
 
   stopAutoplay();
 };
@@ -425,6 +458,10 @@ const handleTouchMove = (event: TouchEvent) => {
     velocity.value = deltaX / deltaTime;
   }
 
+  // Atualizar offset do drag em tempo real
+  const totalDragDistance = currentX.value - startX.value;
+  dragOffset.value = totalDragDistance;
+
   lastMoveX.value = currentX.value;
 };
 
@@ -439,17 +476,30 @@ const handleTouchEnd = (event: TouchEvent) => {
     velocity.value = deltaX / deltaTime;
   }
 
-  // Determinar se deve navegar baseado na velocidade e distância
-  if (
-    Math.abs(deltaX) > props.swipeThreshold ||
-    Math.abs(velocity.value) > 0.5
-  ) {
-    if (deltaX > 0) {
-      prevSlide();
+  // Calcular quantos slides mover baseado no snap
+  const slideOffset = calculateSnapPosition(deltaX);
+
+  if (slideOffset !== 0) {
+    // Navegar para o slide calculado
+    const targetIndex = currentIndex.value + slideOffset;
+    if (props.loopInfinite) {
+      const newIndex =
+        ((targetIndex % props.items.length) + props.items.length) %
+        props.items.length;
+      animateToSlide(newIndex, slideOffset > 0 ? 1 : -1);
     } else {
-      nextSlide();
+      const newIndex = Math.max(
+        0,
+        Math.min(targetIndex, props.items.length - 1)
+      );
+      if (newIndex !== currentIndex.value) {
+        animateToSlide(newIndex, slideOffset > 0 ? 1 : -1);
+      }
     }
   }
+
+  // Reset do offset do drag
+  dragOffset.value = 0;
 
   // Reiniciar autoplay se habilitado
   if (props.autoplay) {
@@ -467,6 +517,8 @@ const handleMouseDown = (event: MouseEvent) => {
   lastMoveX.value = startX.value;
   startTime.value = Date.now();
   velocity.value = 0;
+  dragOffset.value = 0;
+  baseTranslateX.value = translateX.value;
 
   stopAutoplay();
 };
@@ -483,6 +535,10 @@ const handleMouseMove = (event: MouseEvent) => {
     velocity.value = deltaX / deltaTime;
   }
 
+  // Atualizar offset do drag em tempo real
+  const totalDragDistance = currentX.value - startX.value;
+  dragOffset.value = totalDragDistance;
+
   lastMoveX.value = currentX.value;
 };
 
@@ -497,17 +553,30 @@ const handleMouseUp = (event: MouseEvent) => {
     velocity.value = deltaX / deltaTime;
   }
 
-  // Determinar se deve navegar baseado na velocidade e distância
-  if (
-    Math.abs(deltaX) > props.swipeThreshold ||
-    Math.abs(velocity.value) > 0.5
-  ) {
-    if (deltaX > 0) {
-      prevSlide();
+  // Calcular quantos slides mover baseado no snap
+  const slideOffset = calculateSnapPosition(deltaX);
+
+  if (slideOffset !== 0) {
+    // Navegar para o slide calculado
+    const targetIndex = currentIndex.value + slideOffset;
+    if (props.loopInfinite) {
+      const newIndex =
+        ((targetIndex % props.items.length) + props.items.length) %
+        props.items.length;
+      animateToSlide(newIndex, slideOffset > 0 ? 1 : -1);
     } else {
-      nextSlide();
+      const newIndex = Math.max(
+        0,
+        Math.min(targetIndex, props.items.length - 1)
+      );
+      if (newIndex !== currentIndex.value) {
+        animateToSlide(newIndex, slideOffset > 0 ? 1 : -1);
+      }
     }
   }
+
+  // Reset do offset do drag
+  dragOffset.value = 0;
 
   // Reiniciar autoplay se habilitado
   if (props.autoplay) {
@@ -632,6 +701,8 @@ defineExpose({
   slideWidthPx,
   totalWidth,
   displayItems,
+  dragOffset,
+  isDragging,
 });
 </script>
 
@@ -649,129 +720,59 @@ defineExpose({
   width: 100%;
   height: 100%;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  touch-action: pan-y pinch-zoom;
+  will-change: transform;
+  contain: layout style paint;
+  overscroll-behavior: contain;
 }
 
 .carousel-track {
-  position: relative;
-  height: 100%;
   display: flex;
-  align-items: center;
+  height: 100%;
+  will-change: transform;
+  backface-visibility: hidden;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.carousel-track[data-transitioning="true"] {
+  transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 .carousel-slide {
-  position: relative;
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 800ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
 }
 
-/* Botões de navegação */
-.nav-button {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 30;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.carousel-slide > div {
+  transition: opacity 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
-.nav-button:hover {
-  background: rgba(255, 255, 255, 1);
-  transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+/* Efeitos de drag ativo - desabilita transições durante drag */
+.carousel-dragging .carousel-track {
+  transition: none !important;
 }
 
-.nav-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: translateY(-50%);
+.carousel-dragging .carousel-slide {
+  transition: none !important;
 }
 
-.nav-button-prev {
-  left: 16px;
+.carousel-dragging .carousel-slide > div {
+  transition: none !important;
 }
 
-.nav-button-next {
-  right: 16px;
-}
-
-.nav-icon {
-  width: 20px;
-  height: 20px;
-  color: #374151;
-}
-
-/* Indicadores */
-.indicators {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 8px;
-  z-index: 30;
-}
-
-.indicator {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  backdrop-filter: blur(10px);
-}
-
-.indicator:hover {
-  background: rgba(255, 255, 255, 0.8);
-  transform: scale(1.2);
-}
-
-.indicator.active {
-  background: rgba(255, 255, 255, 1);
-  transform: scale(1.3);
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-  .nav-button {
-    width: 40px;
-    height: 40px;
-  }
-
-  .nav-icon {
-    width: 16px;
-    height: 16px;
-  }
-
-  .nav-button-prev {
-    left: 12px;
-  }
-
-  .nav-button-next {
-    right: 12px;
-  }
-
-  .indicators {
-    bottom: 16px;
-  }
-
-  .indicator {
-    width: 10px;
-    height: 10px;
-  }
+/* Efeitos de hover para setas */
+.circular-carousel-container .absolute button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 </style>

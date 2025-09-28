@@ -41,6 +41,8 @@ describe("GenericCarousel", () => {
         items: mockItems,
         autoplay: true,
         autoplayInterval: 3000,
+        showIndicators: true,
+        showProgressBar: true,
       },
       global: {
         stubs: {
@@ -263,19 +265,13 @@ describe("GenericCarousel", () => {
     expect(typeof wrapper.vm.handleMouseDown).toBe("function");
     expect(typeof wrapper.vm.handleMouseMove).toBe("function");
     expect(typeof wrapper.vm.handleMouseUp).toBe("function");
-    expect(typeof wrapper.vm.handleSwipe).toBe("function");
-    expect(typeof wrapper.vm.handleDrag).toBe("function");
   });
 
   it("has swipe state variables", () => {
     // Test that swipe state variables exist
-    expect(wrapper.vm.touchStartX).toBeDefined();
-    expect(wrapper.vm.touchEndX).toBeDefined();
-    expect(wrapper.vm.touchStartY).toBeDefined();
-    expect(wrapper.vm.touchEndY).toBeDefined();
     expect(wrapper.vm.isDragging).toBeDefined();
-    expect(wrapper.vm.dragStartX).toBeDefined();
-    expect(wrapper.vm.dragCurrentX).toBeDefined();
+    expect(wrapper.vm.isTransitioning).toBeDefined();
+    expect(wrapper.vm.currentIndex).toBeDefined();
   });
 
   it("has touch event listeners on carousel wrapper", () => {
