@@ -8,7 +8,7 @@
       aria-roledescription="carousel"
       aria-live="polite"
       :style="{
-        cursor: isDragging ? 'grabbing' : 'grab',
+        cursor: 'default',
         userSelect: 'none',
         WebkitUserSelect: 'none',
         MozUserSelect: 'none',
@@ -43,6 +43,12 @@
             transform: getSlideTransform(index),
             position: 'relative',
             zIndex: index === centerIndex ? 99 : -99,
+            cursor:
+              index === centerIndex
+                ? isDragging
+                  ? 'grabbing'
+                  : 'grab'
+                : 'default',
           }"
           role="group"
           :aria-label="`Slide ${item.originalIndex + 1} de ${items.length}`"
@@ -365,6 +371,12 @@ const calculateSnapPosition = (dragDistance: number) => {
 const nextSlide = () => {
   if (isTransitioning.value) return;
 
+  // Reset dos estados de drag antes da navegação
+  dragOffset.value = 0;
+  itemDragOffset.value = 0;
+  isItemDragging.value = false;
+  draggedItemIndex.value = -1;
+
   if (props.loopInfinite) {
     const nextIndex = (currentIndex.value + 1) % props.items.length;
     animateToSlide(nextIndex, 1);
@@ -376,6 +388,12 @@ const nextSlide = () => {
 
 const prevSlide = () => {
   if (isTransitioning.value) return;
+
+  // Reset dos estados de drag antes da navegação
+  dragOffset.value = 0;
+  itemDragOffset.value = 0;
+  isItemDragging.value = false;
+  draggedItemIndex.value = -1;
 
   if (props.loopInfinite) {
     const prevIndex =
@@ -391,6 +409,12 @@ const prevSlide = () => {
 
 const goToSlide = (targetIndex: number) => {
   if (isTransitioning.value || targetIndex === currentIndex.value) return;
+
+  // Reset dos estados de drag antes da navegação
+  dragOffset.value = 0;
+  itemDragOffset.value = 0;
+  isItemDragging.value = false;
+  draggedItemIndex.value = -1;
 
   const direction = targetIndex > currentIndex.value ? 1 : -1;
   animateToSlide(targetIndex, direction);
@@ -628,6 +652,9 @@ const handleMouseLeave = () => {
 const handleItemTouchStart = (event: TouchEvent, itemIndex: number) => {
   if (isTransitioning.value) return;
 
+  // Permitir drag apenas no item central
+  if (itemIndex !== centerIndex.value) return;
+
   // Configurar drag individual do item
   isItemDragging.value = true;
   draggedItemIndex.value = itemIndex;
@@ -716,6 +743,9 @@ const handleItemTouchEnd = (event: TouchEvent, itemIndex: number) => {
 
 const handleItemMouseDown = (event: MouseEvent, itemIndex: number) => {
   if (isTransitioning.value) return;
+
+  // Permitir drag apenas no item central
+  if (itemIndex !== centerIndex.value) return;
 
   event.preventDefault();
 
