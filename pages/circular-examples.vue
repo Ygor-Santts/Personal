@@ -373,7 +373,7 @@
 </template>
 
 <script setup lang="ts">
-import CircularCarousel from "../components/CircularCarousel.vue";
+import CircularCarousel from "../components/CircularCarousel1.vue";
 
 // Dados para os exemplos
 const simpleCards = [

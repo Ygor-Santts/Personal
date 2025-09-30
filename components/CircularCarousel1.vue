@@ -18,11 +18,37 @@
       }"
     >
       <!-- Carrossel com loop infinito -->
-      <div ref="carouselTrack" class="carousel-track">
+      <div
+        ref="carouselTrack"
+        class="carousel-track"
+        :data-transitioning="isTransitioning"
+        :style="{
+          transform: `translate3d(${translateX + dragOffset}px, 0, 0)`,
+          width: `${totalWidth}px`,
+          willChange: isDragging ? 'transform' : 'auto',
+        }"
+      >
         <!-- Clones para loop infinito -->
         <div
           v-for="(item, index) in displayItems"
           :key="`${item.originalIndex}-${index}`"
+          :class="`carousel-slide h-full flex-shrink-0 ${
+            isTransitioning && !isDragging ? 'carousel-slide-transitioning' : ''
+          }`"
+          :style="{
+            width: getSlideWidth(index),
+            opacity: getSlideOpacity(index),
+            transform: getSlideTransform(index),
+            position: 'relative',
+            zIndex: index === centerIndex ? 99 : 1,
+            cursor:
+              index === centerIndex
+                ? isDragging
+                  ? 'grabbing'
+                  : 'grab'
+                : 'default',
+            willChange: isDragging ? 'transform, opacity' : 'auto',
+          }"
           role="group"
           :aria-label="`Slide ${item.originalIndex + 1} de ${items.length}`"
           @touchstart="handleItemTouchStart($event, index)"
@@ -31,21 +57,12 @@
           @mousedown="handleItemMouseDown($event, index)"
           @mouseleave="handleItemMouseLeave($event, index)"
         >
-          <div
-            :class="`carousel-slide h-full flex-shrink-0 ${
-              isTransitioning && !isDragging
-                ? 'carousel-slide-transitioning'
-                : ''
-            }`"
-            :style="getSlideStyles(index)"
-          >
-            <slot
-              :name="index === centerIndex ? 'center-item' : 'side-item'"
-              :item="item"
-              :index="item.originalIndex"
-              :isActive="index === centerIndex"
-            />
-          </div>
+          <slot
+            :name="index === centerIndex ? 'center-item' : 'side-item'"
+            :item="item"
+            :index="item.originalIndex"
+            :isActive="index === centerIndex"
+          />
         </div>
       </div>
     </div>
@@ -254,7 +271,25 @@ const centerIndex = computed(() => {
   return 1;
 });
 
-// Função para calcular opacidade do slide (baseado no Swiper)
+// Função para calcular largura do slide (baseada no HTML fornecido)
+const getSlideWidth = (index: number) => {
+  if (!carouselWrapper.value) return "0px";
+
+  const wrapperWidth = carouselWrapper.value.offsetWidth;
+  const centerIdx = centerIndex.value;
+  const distance = Math.abs(index - centerIdx);
+
+  // Proporções baseadas no HTML: Central ~48%, Laterais ~26% cada
+  if (distance === 0) {
+    // Item central: 165.333px (48% de 343px)
+    return `${Math.round(wrapperWidth * 0.48)}px`;
+  } else {
+    // Itens laterais: 114.333px (26% de 343px)
+    return `${Math.round(wrapperWidth * 0.26)}px`;
+  }
+};
+
+// Função para calcular opacidade do slide (simplificada)
 const getSlideOpacity = (index: number) => {
   if (!props.loopInfinite || props.items.length <= 1) {
     const isActive = index === currentIndex.value;
@@ -264,108 +299,12 @@ const getSlideOpacity = (index: number) => {
   const centerIdx = centerIndex.value;
   const distance = Math.abs(index - centerIdx);
 
-  // Com apenas 3 itens, temos: 0 (anterior), 1 (centro), 2 (próximo)
+  // Apenas o item central é visível, laterais ficam atrás
   if (distance === 0) return 1; // Centro sempre 100% opaco
-  if (distance === 1) return 0.6; // Itens laterais 60% opacos
-
-  return 0.6; // Fallback para itens laterais
+  return 1; // Itens laterais também 100% opacos, mas atrás
 };
 
-// Função para calcular posicionamento dos itens laterais
-const getSlidePosition = (index: number) => {
-  if (!props.loopInfinite || props.items.length <= 1) {
-    return {
-      position: "relative",
-    };
-  }
-
-  const centerIdx = centerIndex.value;
-  const distance = index - centerIdx;
-
-  // Item central - sem posicionamento especial
-  if (distance === 0) {
-    return {
-      position: "relative",
-    };
-  }
-
-  // Itens à direita do centro
-  if (distance > 0) {
-    return {
-      position: "relative",
-      left: "-100px",
-    };
-  }
-
-  // Itens à esquerda do centro
-  if (distance < 0) {
-    return {
-      position: "relative",
-      right: "-100px",
-    };
-  }
-
-  return {
-    position: "relative",
-  };
-};
-
-// Função para calcular z-index dos itens
-const getSlideZIndex = (index: number) => {
-  if (!props.loopInfinite || props.items.length <= 1) {
-    return index === currentIndex.value ? 99 : 1;
-  }
-
-  const centerIdx = centerIndex.value;
-  const distance = Math.abs(index - centerIdx);
-
-  // Centro sempre na frente
-  if (distance === 0) return 99;
-
-  // Itens laterais atrás
-  return -2;
-};
-
-// Função para combinar todos os estilos do slide
-const getSlideStyles = (index: number) => {
-  const centerIdx = centerIndex.value;
-  const distance = index - centerIdx;
-
-  const baseStyles = {
-    width: `${slideWidthPx.value}px`,
-    opacity: getSlideOpacity(index),
-    transform: getSlideTransform(index),
-    zIndex: getSlideZIndex(index),
-    cursor:
-      index === centerIndex.value
-        ? isDragging.value
-          ? "grabbing"
-          : "grab"
-        : "default",
-    position: "relative" as const,
-  };
-
-  // Aplicar posicionamento específico para itens laterais
-  if (props.loopInfinite && props.items.length > 1) {
-    if (distance > 0) {
-      // Item à direita
-      return {
-        ...baseStyles,
-        left: "-100px",
-      };
-    } else if (distance < 0) {
-      // Item à esquerda
-      return {
-        ...baseStyles,
-        right: "-100px",
-      };
-    }
-  }
-
-  return baseStyles;
-};
-
-// Função para calcular transformação do slide com efeito de profundidade
+// Função para calcular transformação do slide (com proporções específicas)
 const getSlideTransform = (index: number) => {
   if (!props.loopInfinite || props.items.length <= 1) {
     const isActive = index === currentIndex.value;
@@ -373,7 +312,7 @@ const getSlideTransform = (index: number) => {
   }
 
   const centerIdx = centerIndex.value;
-  const distance = index - centerIdx; // Usar diferença com sinal para determinar direção
+  const distance = index - centerIdx;
 
   // Calcular offset individual durante drag
   let individualOffset = 0;
@@ -381,31 +320,34 @@ const getSlideTransform = (index: number) => {
     individualOffset = itemDragOffset.value;
   }
 
-  // Item central - na frente
+  // Item central - na frente (scale 1, translateX baseado no HTML)
   if (distance === 0) {
-    return `scale(1) translateX(${individualOffset}px)`;
+    return `scale(1) translateX(${0}px)`;
   }
 
-  // Itens à direita do centro
+  // Itens laterais - atrás e deslocados (scale 0.7, translateX baseado no HTML)
   if (distance > 0) {
-    return `scale(0.9) translateX(${individualOffset}px)`;
+    // Card à direita (baseado no HTML: translateX(19px))
+    return `scale(0.7) translateX(${-45}px)`;
+  } else {
+    // Card à esquerda (baseado no HTML: translateX(-60px))
+    return `scale(0.7) translateX(${45}px)`;
   }
-
-  // Itens à esquerda do centro
-  if (distance < 0) {
-    return `scale(0.9) translateX(${individualOffset}px)`;
-  }
-
-  return `scale(1) translateX(${individualOffset}px)`;
 };
 
-// Função para calcular dimensões
+// Função para calcular dimensões (com proporções específicas)
 const calculateDimensions = () => {
   if (!carouselWrapper.value) return;
 
   const wrapperWidth = carouselWrapper.value.offsetWidth;
-  slideWidthPx.value = wrapperWidth / props.visibleSlides;
-  totalWidth.value = 3 * slideWidthPx.value; // Sempre 3 itens
+
+  // Proporções baseadas no HTML fornecido
+  // Total: 343px, Central: 165.333px, Laterais: 114.333px cada
+  const centralWidthPx = Math.round(wrapperWidth * 0.48); // ~48% para o central
+  const lateralWidthPx = Math.round(wrapperWidth * 0.26); // ~26% para cada lateral
+
+  slideWidthPx.value = centralWidthPx; // Largura base para cálculos
+  totalWidth.value = wrapperWidth; // Largura total do container
 
   // Reposicionar para o slide atual (centro sempre no meio)
   const centerOffset = Math.floor(props.visibleSlides / 2);
@@ -420,13 +362,13 @@ const roundToNearest = (value: number, nearest: number = 1) => {
   return Math.round(value / nearest) * nearest;
 };
 
-// Função para calcular o snap automático baseado na posição do drag
+// Função para calcular o snap automático (simplificada)
 const calculateSnapPosition = (dragDistance: number) => {
   const slideWidth = slideWidthPx.value;
-  const threshold = slideWidth * 0.2; // 20% do slide para ativar snap (reduzido)
+  const threshold = slideWidth * 0.2; // 20% do slide para ativar snap
 
   // Calcular quantos slides o usuário moveu - INVERTER A DIREÇÃO
-  const slideOffset = Math.round(-dragDistance / slideWidth); // Inverter com sinal negativo
+  const slideOffset = Math.round(-dragDistance / slideWidth);
 
   // Determinar direção baseada na velocidade e distância
   if (Math.abs(dragDistance) > threshold || Math.abs(velocity.value) > 0.3) {
@@ -947,6 +889,16 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 };
 
+// Função para debounce do resize
+const debouncedResize = () => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+  }
+  debounceTimer = setTimeout(() => {
+    calculateDimensions();
+  }, 100);
+};
+
 // Lifecycle hooks
 onMounted(async () => {
   await nextTick();
@@ -960,6 +912,7 @@ onMounted(async () => {
   document.addEventListener("keydown", handleKeydown);
   document.addEventListener("mousemove", handleGlobalMouseMove);
   document.addEventListener("mouseup", handleGlobalMouseUp);
+  window.addEventListener("resize", debouncedResize);
 
   // ResizeObserver para recalcular dimensões
   resizeObserver = new ResizeObserver(() => {
@@ -986,6 +939,7 @@ onUnmounted(() => {
   document.removeEventListener("keydown", handleKeydown);
   document.removeEventListener("mousemove", handleGlobalMouseMove);
   document.removeEventListener("mouseup", handleGlobalMouseUp);
+  window.removeEventListener("resize", debouncedResize);
 
   if (resizeObserver) {
     resizeObserver.disconnect();
