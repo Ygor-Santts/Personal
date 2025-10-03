@@ -1,39 +1,8 @@
 <script setup lang="ts">
+import { computed } from "vue";
+
 // Dados de exemplo para o carousel
-const sampleImages = [
-  {
-    id: 1,
-    title: "1 Hotel Resort Paradise",
-    description: "Um resort de luxo à beira-mar com todas as comodidades",
-    imageUrl:
-      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&h=600&fit=crop",
-    price: "R$ 450/noite",
-    width: 400, // Largura customizada
-    tag: "Tag 1",
-    actionLabel: "Ver mais",
-  },
-  {
-    id: 2,
-    title: "2 Mountain Lodge Retreat",
-    description: "Conforto e tranquilidade nas montanhas",
-    imageUrl:
-      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&h=600&fit=crop",
-    price: "R$ 320/noite",
-    width: 250, // Largura menor (vertical)
-    tag: "Tag 2",
-    actionLabel: "Ver mais",
-  },
-  {
-    id: 3,
-    title: "3 Urban Business Hotel",
-    description: "Localização central para viagens de negócios",
-    imageUrl:
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop",
-    price: "R$ 280/noite",
-    width: 500, // Largura maior (horizontal)
-    tag: "Tag 3",
-    actionLabel: "Ver mais",
-  },
+const moreItems = [
   {
     id: 4,
     title: "4 Boutique Hotel Experience",
@@ -123,15 +92,56 @@ const sampleImages = [
     actionLabel: "Ver mais",
   },
 ];
+const sampleImages = [
+  {
+    id: 1,
+    title: "1 Hotel Resort Paradise",
+    description: "Um resort de luxo à beira-mar com todas as comodidades",
+    imageUrl:
+      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&h=600&fit=crop",
+    price: "R$ 450/noite",
+    width: 400, // Largura customizada
+    tag: "Tag 1",
+    actionLabel: "Ver mais",
+  },
+  {
+    id: 2,
+    title: "2 Mountain Lodge Retreat",
+    description: "Conforto e tranquilidade nas montanhas",
+    imageUrl:
+      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&h=600&fit=crop",
+    price: "R$ 320/noite",
+    width: 250, // Largura menor (vertical)
+    tag: "Tag 2",
+    actionLabel: "Ver mais",
+  },
+  {
+    id: 3,
+    title: "3 Urban Business Hotel",
+    description: "Localização central para viagens de negócios",
+    imageUrl:
+      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop",
+    price: "R$ 280/noite",
+    width: 500, // Largura maior (horizontal)
+    tag: "Tag 3",
+    actionLabel: "Ver mais",
+  },
+];
+
+const computedItems = computed(() => {
+  return sampleImages.concat(moreItems);
+});
 </script>
 
 <template>
   <div class="w-full max-w-6xl mx-auto mt-20 mb-20">
     <div class="w-full h-full">
       <Carousel
-        :items="sampleImages"
+        :items="computedItems"
         :items-per-view="3"
-        :gap="-170"
+        :gap="computedItems.length > 3 ? -180 : -150"
+        :gap-left="-130"
+        :gap-right="-270"
         :height="300"
         :loop="true"
         title="Nossos Hotéis"
