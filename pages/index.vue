@@ -132,6 +132,7 @@ const sampleImages = [
         :items="sampleImages"
         :items-per-view="3"
         :gap="-170"
+        :height="300"
         :loop="true"
         title="Nossos Hotéis"
         subtitle="Descubra as melhores opções de hospedagem"
