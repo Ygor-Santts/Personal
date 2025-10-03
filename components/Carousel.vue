@@ -1,55 +1,86 @@
 <template>
-  <div class="relative w-full overflow-hidden" :style="{ height: `${height}px` }">
-    <!-- Container do carousel -->
-    <div
-      ref="carouselContainer"
-      class="relative h-full overflow-hidden"
-      :class="containerClasses"
-      @mousedown="startDrag"
-      @touchstart="startDrag"
-    >
-      <!-- Items do carousel -->
-      <div
-        v-for="(item, index) in displayItems"
-        :key="`${item.id}-${index}`"
-        class="absolute top-0 h-full carousel-item"
-        :class="itemClasses"
-        :style="getItemStyle(index)"
-      >
-        <slot :item="item" :index="index">
-          <!-- Default slot content -->
-          <div class="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center min-h-[300px]">
-            <div class="text-center">
-              <div class="text-lg font-semibold mb-2">{{ item['title'] || `Item ${index + 1}` }}</div>
-              <div v-if="item['description']" class="text-sm text-gray-600">{{ item['description'] }}</div>
-            </div>
-          </div>
-        </slot>
-      </div>
+  <div class="w-full">
+    <!-- Título e subtítulo -->
+    <div v-if="title || subtitle" class="text-center mb-6">
+      <h2 v-if="title" class="text-2xl font-bold text-gray-800 mb-2">
+        {{ title }}
+      </h2>
+      <p v-if="subtitle" class="text-gray-600">{{ subtitle }}</p>
     </div>
 
-    <!-- Navegação por setas -->
-    <button
-      v-if="showArrows"
-      @click="previous"
-      class="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/80 hover:bg-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
-      :disabled="!canGoPrevious"
+    <!-- Container do carrossel -->
+    <div
+      class="relative w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+      :style="{ height: `${height}px` }"
+      tabindex="0"
+      role="region"
+      aria-label="Carrossel de imagens"
     >
-      <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-      </svg>
-    </button>
+      <!-- Container do carousel -->
+      <div
+        ref="carouselContainer"
+        class="relative h-full overflow-hidden"
+        :class="containerClasses"
+        @mousedown="startDrag"
+        @touchstart="startDrag"
+      >
+        <!-- Items do carousel -->
+        <div
+          v-for="(item, index) in displayItems"
+          :key="`${item.id}-${index}`"
+          class="absolute top-0 h-full carousel-item"
+          :class="itemClasses"
+          :style="getItemStyle(index)"
+        >
+          <slot :item="item" :index="index"> </slot>
+        </div>
+      </div>
 
-    <button
-      v-if="showArrows"
-      @click="next"
-      class="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/80 hover:bg-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
-      :disabled="!canGoNext"
-    >
-      <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-      </svg>
-    </button>
+      <!-- Navegação por setas -->
+      <button
+        v-if="showArrows"
+        @click="previous"
+        class="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/80 hover:bg-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
+        :disabled="!canGoPrevious"
+        aria-label="Slide anterior"
+      >
+        <svg
+          class="w-6 h-6 text-gray-700"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 19l-7-7 7-7"
+          ></path>
+        </svg>
+      </button>
+
+      <button
+        v-if="showArrows"
+        @click="next"
+        class="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/80 hover:bg-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
+        :disabled="!canGoNext"
+        aria-label="Próximo slide"
+      >
+        <svg
+          class="w-6 h-6 text-gray-700"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5l7 7-7 7"
+          ></path>
+        </svg>
+      </button>
+    </div>
 
     <!-- Indicadores de página -->
     <div v-if="showDots" class="flex justify-center mt-4 gap-2">
@@ -59,36 +90,50 @@
         @click="goToSlide(index)"
         class="w-2 h-2 rounded-full transition-all duration-200"
         :class="index === currentSlide ? 'bg-blue-600' : 'bg-gray-300'"
+        :aria-label="`Ir para slide ${index + 1}`"
       />
+    </div>
+
+    <!-- Seção de conteúdo externa -->
+    <div v-if="showContent" class="mt-6 text-center space-y-3">
+      <Transition name="content-fade" mode="out-in">
+        <div :key="currentSlide" class="transition-all duration-300 ease-out">
+          <slot name="content" :item="activeItem" :index="currentSlide" />
+        </div>
+      </Transition>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, readonly } from 'vue'
+import { ref, computed, onMounted, onUnmounted, readonly } from "vue";
 
 interface CarouselItem {
-  id: string | number
-  width?: number // Largura customizada do item
-  height?: number // Altura customizada do item
-  [key: string]: any
+  id: string | number;
+  width?: number; // Largura customizada do item
+  height?: number; // Altura customizada do item
+  [key: string]: any;
 }
 
 interface Props {
-  items: CarouselItem[]
-  infinite?: boolean
-  loop?: boolean // Loop infinito usando matemática modular (mais eficiente que infinite)
-  showArrows?: boolean
-  showDots?: boolean
-  itemsPerView?: number
-  gap?: number
-  autoPlay?: boolean
-  autoPlayDelay?: number
-  centerMode?: boolean
-  height?: number
-  dragSensitivity?: number
-  variableWidth?: boolean // Permite larguras diferentes para cada item
-  fixedItemWidth?: number // Largura fixa quando variableWidth é false
+  items: CarouselItem[];
+  infinite?: boolean;
+  loop?: boolean; // Loop infinito usando matemática modular (mais eficiente que infinite)
+  showArrows?: boolean;
+  showDots?: boolean;
+  itemsPerView?: number;
+  gap?: number;
+  autoPlay?: boolean;
+  autoPlayDelay?: number;
+  centerMode?: boolean;
+  height?: number;
+  dragSensitivity?: number;
+  variableWidth?: boolean; // Permite larguras diferentes para cada item
+  fixedItemWidth?: number; // Largura fixa quando variableWidth é false
+  // Novas props para texto e conteúdo
+  title?: string;
+  subtitle?: string;
+  showContent?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -104,195 +149,221 @@ const props = withDefaults(defineProps<Props>(), {
   height: 400,
   dragSensitivity: 1,
   variableWidth: false,
-  fixedItemWidth: 224.427
-})
+  fixedItemWidth: 224.427,
+  // Novas props com valores padrão
+  title: "",
+  subtitle: "",
+  showContent: false,
+});
 
 const emit = defineEmits<{
-  slideChange: [index: number]
-}>()
+  slideChange: [index: number];
+}>();
 
 // Refs
-const carouselContainer = ref<HTMLElement>()
-const currentSlide = ref(0)
-const isDragging = ref(false)
-const dragStartX = ref(0)
-const dragCurrentX = ref(0)
-const dragOffset = ref(0)
-const autoPlayTimer = ref<NodeJS.Timeout>()
-const animationFrame = ref<number>()
+const carouselContainer = ref<HTMLElement>();
+const currentSlide = ref(0);
+const isDragging = ref(false);
+const dragStartX = ref(0);
+const dragCurrentX = ref(0);
+const dragOffset = ref(0);
+const autoPlayTimer = ref<NodeJS.Timeout>();
+const animationFrame = ref<number>();
+const isPlaying = ref(props.autoPlay);
 
 // Computed
 const totalSlides = computed(() => {
   // Calcular número total de slides baseado em items-per-view
   // Começar do slide 0 (não incluir slide -1)
-  const maxSlide = Math.max(0, props.items.length - props.itemsPerView)
-  return Math.max(1, maxSlide + 1) // +1 para incluir slide 0
-})
+  const maxSlide = Math.max(0, props.items.length - props.itemsPerView);
+  return Math.max(1, maxSlide + 1); // +1 para incluir slide 0
+});
 
 const displayItems = computed(() => {
   // Para loop, sempre retorna apenas os itens originais
   if (props.loop) {
-    return props.items
+    return props.items;
   }
 
   if (!props.infinite) {
-    return props.items
+    return props.items;
   }
 
   // Para carousel infinito, duplicamos os itens
-  const beforeItems = props.items.slice(-props.itemsPerView)
-  const afterItems = props.items.slice(0, props.itemsPerView)
-  return [...beforeItems, ...props.items, ...afterItems]
-})
+  const beforeItems = props.items.slice(-props.itemsPerView);
+  const afterItems = props.items.slice(0, props.itemsPerView);
+  return [...beforeItems, ...props.items, ...afterItems];
+});
 
 const canGoPrevious = computed(() => {
-  return props.loop || props.infinite || currentSlide.value > 0
-})
+  return props.loop || props.infinite || currentSlide.value > 0;
+});
 
 const canGoNext = computed(() => {
-  const maxSlide = Math.max(0, props.items.length - props.itemsPerView)
-  return props.loop || props.infinite || currentSlide.value < maxSlide
-})
+  const maxSlide = Math.max(0, props.items.length - props.itemsPerView);
+  return props.loop || props.infinite || currentSlide.value < maxSlide;
+});
 
 const containerClasses = computed(() => {
-  return ['cursor-grab', isDragging.value && 'cursor-grabbing']
-})
+  return ["cursor-grab", isDragging.value && "cursor-grabbing"];
+});
 
 const itemClasses = computed(() => {
   return [
     // Só aplica transição quando não está arrastando
-    !isDragging.value && 'transition-all duration-300 ease-out',
+    !isDragging.value && "transition-all duration-300 ease-out",
     // Otimizações de performance
-    'transform-gpu'
-  ]
-})
+    "transform-gpu",
+  ];
+});
 
 const dots = computed(() => {
-  return props.items.slice(0, totalSlides.value)
-})
+  return props.items.slice(0, totalSlides.value);
+});
+
+// Computed para o item ativo (necessário para o slot de conteúdo)
+const activeItem = computed(() => {
+  if (props.loop) {
+    // Para loop, usar módulo para garantir índice válido
+    const index = currentSlide.value % props.items.length;
+    return props.items[index];
+  }
+  return props.items[currentSlide.value];
+});
 
 // Métodos
 const getItemStyle = (index: number) => {
-  const containerWidth = carouselContainer.value?.offsetWidth || 1
-  const item = displayItems.value[index]
+  const containerWidth = carouselContainer.value?.offsetWidth || 1;
+  const item = displayItems.value[index];
 
   // Calcular largura do item
-  let itemWidth: number
+  let itemWidth: number;
   if (props.variableWidth && item?.width) {
-    itemWidth = item.width
+    itemWidth = item.width;
   } else {
-    itemWidth = props.fixedItemWidth
+    itemWidth = props.fixedItemWidth;
   }
 
-  const itemWidthWithGap = itemWidth + props.gap
+  const itemWidthWithGap = itemWidth + props.gap;
 
   // Posição base do item
-  let basePosition: number
+  let basePosition: number;
   if (props.loop) {
     // Para loop, calcular a posição considerando o wrap-around
-    const realIndex = index % props.items.length
+    const realIndex = index % props.items.length;
 
     if (props.variableWidth) {
       // Para larguras variáveis, calcular posição acumulada baseada no índice real
       basePosition = props.items.slice(0, realIndex).reduce((acc, prevItem) => {
-        const prevWidth = prevItem?.width || props.fixedItemWidth
-        return acc + prevWidth + props.gap
-      }, 0)
+        const prevWidth = prevItem?.width || props.fixedItemWidth;
+        return acc + prevWidth + props.gap;
+      }, 0);
     } else {
       // Para larguras fixas, usar multiplicação com índice real
-      basePosition = realIndex * itemWidthWithGap
+      basePosition = realIndex * itemWidthWithGap;
     }
 
     // Para loop, não precisamos de wrap-around na basePosition
     // O wrap-around é tratado pela lógica de posicionamento final
   } else if (props.variableWidth) {
     // Para larguras variáveis, calcular posição acumulada
-    basePosition = displayItems.value.slice(0, index).reduce((acc, prevItem) => {
-      const prevWidth = prevItem?.width || props.fixedItemWidth
-      return acc + prevWidth + props.gap
-    }, 0)
+    basePosition = displayItems.value
+      .slice(0, index)
+      .reduce((acc, prevItem) => {
+        const prevWidth = prevItem?.width || props.fixedItemWidth;
+        return acc + prevWidth + props.gap;
+      }, 0);
   } else {
     // Para larguras fixas, usar multiplicação
-    basePosition = index * itemWidthWithGap
+    basePosition = index * itemWidthWithGap;
   }
 
   // Offset do slide atual
-  let slideOffset: number
+  let slideOffset: number;
   if (props.loop) {
     // Para loop, usar matemática modular para calcular o offset
-    const realCurrentSlide = currentSlide.value % props.items.length
+    const realCurrentSlide = currentSlide.value % props.items.length;
     if (props.variableWidth) {
       // Para larguras variáveis, calcular offset acumulado baseado no slide real
-      slideOffset = -props.items.slice(0, realCurrentSlide).reduce((acc, prevItem) => {
-        const prevWidth = prevItem?.width || props.fixedItemWidth
-        return acc + prevWidth + props.gap
-      }, 0)
+      slideOffset = -props.items
+        .slice(0, realCurrentSlide)
+        .reduce((acc, prevItem) => {
+          const prevWidth = prevItem?.width || props.fixedItemWidth;
+          return acc + prevWidth + props.gap;
+        }, 0);
     } else {
       // Para larguras fixas, usar multiplicação com slide real
-      slideOffset = -realCurrentSlide * itemWidthWithGap
+      slideOffset = -realCurrentSlide * itemWidthWithGap;
     }
   } else if (props.variableWidth) {
     // Para larguras variáveis, calcular offset acumulado até o currentSlide
-    slideOffset = -displayItems.value.slice(0, Math.max(0, currentSlide.value)).reduce((acc, prevItem) => {
-      const prevWidth = prevItem?.width || props.fixedItemWidth
-      return acc + prevWidth + props.gap
-    }, 0)
+    slideOffset = -displayItems.value
+      .slice(0, Math.max(0, currentSlide.value))
+      .reduce((acc, prevItem) => {
+        const prevWidth = prevItem?.width || props.fixedItemWidth;
+        return acc + prevWidth + props.gap;
+      }, 0);
   } else {
-    slideOffset = -currentSlide.value * itemWidthWithGap
+    slideOffset = -currentSlide.value * itemWidthWithGap;
   }
 
   // Offset do drag
-  const dragOffsetPx = dragOffset.value
+  const dragOffsetPx = dragOffset.value;
 
   // Para carousel infinito, ajustamos a posição
-  let infiniteOffset = 0
+  let infiniteOffset = 0;
   if (props.infinite) {
     if (props.variableWidth) {
       // Para larguras variáveis, calcular o offset baseado nos itens duplicados
-      infiniteOffset = displayItems.value.slice(0, props.itemsPerView).reduce((sum, item) => {
-        return sum + (item?.width || props.fixedItemWidth) + props.gap
-      }, 0)
+      infiniteOffset = displayItems.value
+        .slice(0, props.itemsPerView)
+        .reduce((sum, item) => {
+          return sum + (item?.width || props.fixedItemWidth) + props.gap;
+        }, 0);
     } else {
-      infiniteOffset = props.itemsPerView * itemWidthWithGap
+      infiniteOffset = props.itemsPerView * itemWidthWithGap;
     }
   }
 
   // Para loop, usar matemática modular simples
-  const realIndex = index % props.items.length
-  const realCurrentSlide = currentSlide.value % props.items.length
+  const realIndex = index % props.items.length;
+  const realCurrentSlide = currentSlide.value % props.items.length;
 
   // Calcular a diferença relativa entre o item e o currentSlide
-  let relativePosition: number
+  let relativePosition: number;
   if (props.loop) {
     // Para loop, calcular a posição relativa considerando wrap-around
-    let diff = realIndex - realCurrentSlide
+    let diff = realIndex - realCurrentSlide;
 
     // Ajustar para o wrap-around (considerar a menor distância)
     if (diff > props.items.length / 2) {
-      diff -= props.items.length
+      diff -= props.items.length;
     } else if (diff < -props.items.length / 2) {
-      diff += props.items.length
+      diff += props.items.length;
     }
 
-    relativePosition = diff
+    relativePosition = diff;
   } else {
-    relativePosition = index - currentSlide.value
+    relativePosition = index - currentSlide.value;
   }
 
   // Verificar se o item está na área de visualização
-  const isInViewArea = relativePosition >= 0 && relativePosition < props.itemsPerView
+  const isInViewArea =
+    relativePosition >= 0 && relativePosition < props.itemsPerView;
 
   // Centro visual é no meio da área de visualização
-  const centerIndex = Math.floor(props.itemsPerView / 2)
+  const centerIndex = Math.floor(props.itemsPerView / 2);
 
   // Calcular a posição final baseada na posição relativa
-  let finalPosition: number
+  let finalPosition: number;
   if (isInViewArea) {
     // Item na área de visualização - posição baseada na relativePosition
-    finalPosition = relativePosition * itemWidthWithGap + infiniteOffset + dragOffsetPx
+    finalPosition =
+      relativePosition * itemWidthWithGap + infiniteOffset + dragOffsetPx;
   } else {
     // Item fora da área de visualização - usar a mesma posição do item central
-    finalPosition = centerIndex * itemWidthWithGap + infiniteOffset + dragOffsetPx
+    finalPosition =
+      centerIndex * itemWidthWithGap + infiniteOffset + dragOffsetPx;
   }
 
   // Calcular distância do centro visual dos itens exibidos
@@ -301,14 +372,16 @@ const getItemStyle = (index: number) => {
 
   // Considerar o drag offset para calcular a posição "virtual" do centro
   // Inverter o sinal: drag para direita = próximo slide, drag para esquerda = slide anterior
-  let dragOffsetInSlides: number
+  let dragOffsetInSlides: number;
   if (props.variableWidth) {
     const avgItemWidth =
-      displayItems.value.reduce((sum, item) => sum + (item?.width || props.fixedItemWidth), 0) /
-      displayItems.value.length
-    dragOffsetInSlides = -dragOffsetPx / (avgItemWidth + props.gap)
+      displayItems.value.reduce(
+        (sum, item) => sum + (item?.width || props.fixedItemWidth),
+        0
+      ) / displayItems.value.length;
+    dragOffsetInSlides = -dragOffsetPx / (avgItemWidth + props.gap);
   } else {
-    dragOffsetInSlides = -dragOffsetPx / itemWidthWithGap
+    dragOffsetInSlides = -dragOffsetPx / itemWidthWithGap;
   }
 
   // Durante o drag, usar apenas o offset para calcular o centro virtual
@@ -316,302 +389,368 @@ const getItemStyle = (index: number) => {
   const virtualCenter =
     isDragging.value && Math.abs(dragOffsetPx) > 5 // Só muda se realmente arrastou
       ? currentSlide.value + centerIndex + dragOffsetInSlides
-      : currentSlide.value + centerIndex
+      : currentSlide.value + centerIndex;
 
   // Removido: lógica complexa de z-index
   // Agora z-index é baseado diretamente na escala
 
   // Calcular escala baseada na posição relativa ao centro
-  const baseScale = 0.7 // Escala mínima
-  const maxScale = 1.0 // Escala máxima
+  const baseScale = 0.7; // Escala mínima
+  const maxScale = 1.0; // Escala máxima
 
-  let scale = baseScale
-  let zIndex = 1
+  let scale = baseScale;
+  let zIndex = 1;
 
   if (isInViewArea) {
     // Item na área de visualização - calcular escala baseada na proximidade do centro
-    let distanceFromCenter: number
+    let distanceFromCenter: number;
 
     if (isDragging.value && Math.abs(dragOffsetPx) > 5) {
       // Durante o drag: ajustar a distância considerando o offset do drag
       // relativePosition já considera a posição visual correta
-      distanceFromCenter = Math.abs(relativePosition - centerIndex - dragOffsetInSlides)
+      distanceFromCenter = Math.abs(
+        relativePosition - centerIndex - dragOffsetInSlides
+      );
     } else {
       // Sem drag: usar apenas a posição relativa
-      distanceFromCenter = Math.abs(relativePosition - centerIndex)
+      distanceFromCenter = Math.abs(relativePosition - centerIndex);
     }
 
-    const maxDistance = Math.ceil(props.itemsPerView / 2)
-    const normalizedDistance = Math.min(distanceFromCenter / maxDistance, 1)
+    const maxDistance = Math.ceil(props.itemsPerView / 2);
+    const normalizedDistance = Math.min(distanceFromCenter / maxDistance, 1);
 
-    scale = Math.max(baseScale, maxScale - normalizedDistance * (maxScale - baseScale))
+    scale = Math.max(
+      baseScale,
+      maxScale - normalizedDistance * (maxScale - baseScale)
+    );
 
     // Z-index: baseado diretamente na escala
-    zIndex = Math.max(1, Math.floor(scale * 10))
+    zIndex = Math.max(1, Math.floor(scale * 10));
   } else {
     // Item fora da área de visualização - escala mínima e z-index baixo
-    scale = baseScale * 0.5 // Escala bem pequena para ficar atrás
-    zIndex = 1 // Z-index mínimo
+    scale = baseScale * 0.5; // Escala bem pequena para ficar atrás
+    zIndex = 1; // Z-index mínimo
   }
 
   // Centralizar o carousel
-  let centerOffset: number
+  let centerOffset: number;
   if (props.variableWidth) {
     // Para larguras variáveis com múltiplos items visíveis:
     // O item que deveria estar no centro visual é currentSlide + centerIndex
-    let visualCenterItemIndex: number
+    let visualCenterItemIndex: number;
     if (props.loop) {
       // Para loop, usar matemática modular
-      visualCenterItemIndex = (currentSlide.value + centerIndex) % props.items.length
+      visualCenterItemIndex =
+        (currentSlide.value + centerIndex) % props.items.length;
     } else {
-      visualCenterItemIndex = Math.max(0, Math.floor(currentSlide.value + centerIndex))
+      visualCenterItemIndex = Math.max(
+        0,
+        Math.floor(currentSlide.value + centerIndex)
+      );
     }
 
     // Calcular posição acumulada até esse item
-    let positionOfCenterItem: number
-    let centerItemWidth: number
+    let positionOfCenterItem: number;
+    let centerItemWidth: number;
 
     if (props.loop) {
       // Para loop, usar props.items em vez de displayItems
-      positionOfCenterItem = props.items.slice(0, visualCenterItemIndex).reduce((acc, prevItem) => {
-        const prevWidth = prevItem?.width || props.fixedItemWidth
-        return acc + prevWidth + props.gap
-      }, 0)
-      centerItemWidth = props.items[visualCenterItemIndex]?.width || props.fixedItemWidth
+      positionOfCenterItem = props.items
+        .slice(0, visualCenterItemIndex)
+        .reduce((acc, prevItem) => {
+          const prevWidth = prevItem?.width || props.fixedItemWidth;
+          return acc + prevWidth + props.gap;
+        }, 0);
+      centerItemWidth =
+        props.items[visualCenterItemIndex]?.width || props.fixedItemWidth;
     } else {
-      positionOfCenterItem = displayItems.value.slice(0, visualCenterItemIndex).reduce((acc, prevItem) => {
-        const prevWidth = prevItem?.width || props.fixedItemWidth
-        return acc + prevWidth + props.gap
-      }, 0)
-      centerItemWidth = displayItems.value[visualCenterItemIndex]?.width || props.fixedItemWidth
+      positionOfCenterItem = displayItems.value
+        .slice(0, visualCenterItemIndex)
+        .reduce((acc, prevItem) => {
+          const prevWidth = prevItem?.width || props.fixedItemWidth;
+          return acc + prevWidth + props.gap;
+        }, 0);
+      centerItemWidth =
+        displayItems.value[visualCenterItemIndex]?.width ||
+        props.fixedItemWidth;
     }
 
     // O centro da tela
-    const screenCenter = containerWidth / 2
+    const screenCenter = containerWidth / 2;
 
     // Para centralizar: screenCenter deve apontar para o centro do item
     // Após aplicar slideOffset, o item estará em: positionOfCenterItem - slideOffset
     // Queremos: positionOfCenterItem - slideOffset + centerItemWidth/2 = screenCenter
     // Logo: centerOffset = screenCenter - centerItemWidth/2
     // Mas como slideOffset já move baseado no currentSlide, precisamos compensar
-    centerOffset = screenCenter - positionOfCenterItem - centerItemWidth / 2 - slideOffset
+    centerOffset =
+      screenCenter - positionOfCenterItem - centerItemWidth / 2 - slideOffset;
   } else {
-    centerOffset = (containerWidth - (props.itemsPerView * itemWidthWithGap - props.gap)) / 2
+    centerOffset =
+      (containerWidth - (props.itemsPerView * itemWidthWithGap - props.gap)) /
+      2;
   }
-  const totalTranslate = finalPosition + centerOffset
+  const totalTranslate = finalPosition + centerOffset;
 
   // Calcular opacity baseada na escala
   // Quanto menor a escala, menor a opacity
-  const opacity = Math.max(0.1, scale)
+  const opacity = Math.max(0.1, scale);
 
   return {
     transform: `translateX(${totalTranslate}px) scale(${scale})`,
     width: `${itemWidth}px`,
-    willChange: 'transform, opacity',
-    transformOrigin: 'center center',
+    willChange: "transform, opacity",
+    transformOrigin: "center center",
     zIndex: zIndex,
-    opacity: opacity
-  }
-}
+    opacity: opacity,
+  };
+};
 
 const startDrag = (e: MouseEvent | TouchEvent) => {
   // Verificar se o elemento clicado é interativo
-  const target = e.target as HTMLElement
-  if (target.tagName === 'BUTTON' || target.tagName === 'A' || target.closest('button, a')) {
-    return
+  const target = e.target as HTMLElement;
+  if (
+    target.tagName === "BUTTON" ||
+    target.tagName === "A" ||
+    target.closest("button, a")
+  ) {
+    return;
   }
 
-  e.preventDefault()
-  e.stopPropagation()
+  e.preventDefault();
+  e.stopPropagation();
 
-  isDragging.value = true
-  dragStartX.value = 'touches' in e ? e.touches[0].clientX : e.clientX
-  dragCurrentX.value = dragStartX.value
-  dragOffset.value = 0
+  isDragging.value = true;
+  dragStartX.value = "touches" in e ? e.touches[0].clientX : e.clientX;
+  dragCurrentX.value = dragStartX.value;
+  dragOffset.value = 0;
 
   // Pausar autoplay durante o drag
   if (autoPlayTimer.value) {
-    clearInterval(autoPlayTimer.value)
+    clearInterval(autoPlayTimer.value);
   }
 
   // Adicionar event listeners globais para capturar movimento fora do carousel
-  document.addEventListener('mousemove', drag, { passive: false })
-  document.addEventListener('touchmove', drag, { passive: false })
-  document.addEventListener('mouseup', endDrag, { passive: false })
-  document.addEventListener('touchend', endDrag, { passive: false })
-}
+  document.addEventListener("mousemove", drag, { passive: false });
+  document.addEventListener("touchmove", drag, { passive: false });
+  document.addEventListener("mouseup", endDrag, { passive: false });
+  document.addEventListener("touchend", endDrag, { passive: false });
+};
 
 const drag = (e: MouseEvent | TouchEvent) => {
-  if (!isDragging.value) return
+  if (!isDragging.value) return;
 
-  e.preventDefault()
-  e.stopPropagation()
+  e.preventDefault();
+  e.stopPropagation();
 
-  const newX = 'touches' in e ? e.touches[0].clientX : e.clientX
-  const newOffset = (newX - dragStartX.value) * props.dragSensitivity
+  const newX = "touches" in e ? e.touches[0].clientX : e.clientX;
+  const newOffset = (newX - dragStartX.value) * props.dragSensitivity;
 
   // Cancelar animation frame anterior se existir
   if (animationFrame.value) {
-    cancelAnimationFrame(animationFrame.value)
+    cancelAnimationFrame(animationFrame.value);
   }
 
   // Usar requestAnimationFrame para máxima performance
   animationFrame.value = requestAnimationFrame(() => {
-    dragCurrentX.value = newX
-    dragOffset.value = newOffset
-  })
-}
+    dragCurrentX.value = newX;
+    dragOffset.value = newOffset;
+  });
+};
 
 const endDrag = () => {
-  if (!isDragging.value) return
+  if (!isDragging.value) return;
 
-  isDragging.value = false
+  isDragging.value = false;
 
   // Cancelar animation frame pendente
   if (animationFrame.value) {
-    cancelAnimationFrame(animationFrame.value)
-    animationFrame.value = undefined
+    cancelAnimationFrame(animationFrame.value);
+    animationFrame.value = undefined;
   }
 
   // Remover event listeners globais
-  document.removeEventListener('mousemove', drag)
-  document.removeEventListener('touchmove', drag)
-  document.removeEventListener('mouseup', endDrag)
-  document.removeEventListener('touchend', endDrag)
+  document.removeEventListener("mousemove", drag);
+  document.removeEventListener("touchmove", drag);
+  document.removeEventListener("mouseup", endDrag);
+  document.removeEventListener("touchend", endDrag);
 
   // Threshold para mudança de slide
-  const containerWidth = carouselContainer.value?.offsetWidth || 1
-  const itemWidth = containerWidth / props.itemsPerView
-  const threshold = itemWidth * 0.3 // 30% da largura de um item
+  const containerWidth = carouselContainer.value?.offsetWidth || 1;
+  const itemWidth = containerWidth / props.itemsPerView;
+  const threshold = itemWidth * 0.3; // 30% da largura de um item
 
   if (Math.abs(dragOffset.value) > threshold) {
     if (dragOffset.value > 0 && canGoPrevious.value) {
-      previous()
+      previous();
     } else if (dragOffset.value < 0 && canGoNext.value) {
-      next()
+      next();
     }
   }
 
-  dragOffset.value = 0
+  dragOffset.value = 0;
 
   // Retomar autoplay se estiver ativo
   if (props.autoPlay) {
-    startAutoPlay()
+    startAutoPlay();
   }
-}
+};
 
 const next = () => {
   if (props.loop) {
     // Loop usando matemática modular
-    currentSlide.value = (currentSlide.value + 1) % props.items.length
+    currentSlide.value = (currentSlide.value + 1) % props.items.length;
   } else if (props.infinite) {
-    currentSlide.value++
+    currentSlide.value++;
 
     // Reset para o início quando necessário
     if (currentSlide.value >= props.items.length) {
       setTimeout(() => {
-        currentSlide.value = 0
-      }, 300)
+        currentSlide.value = 0;
+      }, 300);
     }
   } else {
-    const maxSlide = Math.max(0, props.items.length - props.itemsPerView)
-    currentSlide.value = Math.min(currentSlide.value + 1, maxSlide)
+    const maxSlide = Math.max(0, props.items.length - props.itemsPerView);
+    currentSlide.value = Math.min(currentSlide.value + 1, maxSlide);
   }
 
-  emit('slideChange', currentSlide.value)
-}
+  emit("slideChange", currentSlide.value);
+};
 
 const previous = () => {
   if (props.loop) {
     // Loop usando matemática modular
-    currentSlide.value = (currentSlide.value - 1 + props.items.length) % props.items.length
+    currentSlide.value =
+      (currentSlide.value - 1 + props.items.length) % props.items.length;
   } else if (props.infinite) {
-    currentSlide.value--
+    currentSlide.value--;
 
     // Reset para o fim quando necessário
     if (currentSlide.value < 0) {
       setTimeout(() => {
-        currentSlide.value = props.items.length - 1
-      }, 300)
+        currentSlide.value = props.items.length - 1;
+      }, 300);
     }
   } else {
-    currentSlide.value = Math.max(currentSlide.value - 1, 0)
+    currentSlide.value = Math.max(currentSlide.value - 1, 0);
   }
 
-  emit('slideChange', currentSlide.value)
-}
+  emit("slideChange", currentSlide.value);
+};
 
 const goToSlide = (index: number) => {
-  currentSlide.value = index
-  emit('slideChange', currentSlide.value)
-}
+  currentSlide.value = index;
+  emit("slideChange", currentSlide.value);
+};
 
 const startAutoPlay = () => {
   if (autoPlayTimer.value) {
-    clearInterval(autoPlayTimer.value)
+    clearInterval(autoPlayTimer.value);
   }
 
+  isPlaying.value = true;
   autoPlayTimer.value = setInterval(() => {
     if (canGoNext.value) {
-      next()
+      next();
     } else if (props.infinite) {
-      next()
+      next();
     } else {
-      currentSlide.value = 0
+      currentSlide.value = 0;
     }
-  }, props.autoPlayDelay)
-}
+  }, props.autoPlayDelay);
+};
 
 const stopAutoPlay = () => {
   if (autoPlayTimer.value) {
-    clearInterval(autoPlayTimer.value)
-    autoPlayTimer.value = undefined
+    clearInterval(autoPlayTimer.value);
+    autoPlayTimer.value = undefined;
   }
-}
+  isPlaying.value = false;
+};
+
+const toggleAutoPlay = () => {
+  if (isPlaying.value) {
+    stopAutoPlay();
+  } else {
+    startAutoPlay();
+  }
+};
+
+// Função de navegação por teclado
+const handleKeydown = (event: KeyboardEvent) => {
+  // Só processar se o carrossel estiver em foco ou se não houver outros elementos focados
+  if (isDragging.value) return;
+
+  switch (event.key) {
+    case "ArrowLeft":
+      event.preventDefault();
+      previous();
+      break;
+    case "ArrowRight":
+      event.preventDefault();
+      next();
+      break;
+    case " ":
+      event.preventDefault();
+      toggleAutoPlay();
+      break;
+    case "Home":
+      event.preventDefault();
+      goToSlide(0);
+      break;
+    case "End":
+      event.preventDefault();
+      goToSlide(props.items.length - 1);
+      break;
+  }
+};
 
 // Lifecycle
 onMounted(() => {
   if (props.autoPlay) {
-    startAutoPlay()
+    startAutoPlay();
   }
 
   // Pausar autoplay quando a janela não está em foco
   const handleVisibilityChange = () => {
     if (document.hidden) {
-      stopAutoPlay()
+      stopAutoPlay();
     } else if (props.autoPlay) {
-      startAutoPlay()
+      startAutoPlay();
     }
-  }
+  };
 
-  document.addEventListener('visibilitychange', handleVisibilityChange)
+  // Adicionar event listeners
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+  document.addEventListener("keydown", handleKeydown);
 
   onUnmounted(() => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange)
-    stopAutoPlay()
-  })
-})
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+    document.removeEventListener("keydown", handleKeydown);
+    stopAutoPlay();
+  });
+});
 
 onUnmounted(() => {
-  stopAutoPlay()
+  stopAutoPlay();
   // Cancelar animation frame pendente
   if (animationFrame.value) {
-    cancelAnimationFrame(animationFrame.value)
+    cancelAnimationFrame(animationFrame.value);
   }
   // Limpar event listeners caso o componente seja desmontado durante o drag
-  document.removeEventListener('mousemove', drag)
-  document.removeEventListener('touchmove', drag)
-  document.removeEventListener('mouseup', endDrag)
-  document.removeEventListener('touchend', endDrag)
-})
+  document.removeEventListener("mousemove", drag);
+  document.removeEventListener("touchmove", drag);
+  document.removeEventListener("mouseup", endDrag);
+  document.removeEventListener("touchend", endDrag);
+});
 
 // Exposição de métodos para uso externo
 defineExpose({
   next,
   previous,
   goToSlide,
-  currentSlide: readonly(currentSlide)
-})
+  currentSlide: readonly(currentSlide),
+});
 </script>
 
 <style scoped>
@@ -649,5 +788,21 @@ defineExpose({
 /* Efeito de profundidade para os itens */
 .carousel-item {
   transform-style: preserve-3d;
+}
+
+/* Transições de conteúdo */
+.content-fade-enter-active,
+.content-fade-leave-active {
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.content-fade-enter-from {
+  opacity: 0;
+  transform: translate3d(0, 15px, 0);
+}
+
+.content-fade-leave-to {
+  opacity: 0;
+  transform: translate3d(0, -15px, 0);
 }
 </style>
