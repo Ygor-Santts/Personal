@@ -89,7 +89,7 @@
         :key="index"
         @click="goToSlide(index)"
         class="w-2 h-2 rounded-full transition-all duration-200"
-        :class="index === activeDotIndex ? 'bg-blue-600' : 'bg-gray-300'"
+        :class="index === currentSlide ? 'bg-blue-600' : 'bg-gray-300'"
         :aria-label="`Ir para slide ${index + 1}`"
       />
     </div>
@@ -123,8 +123,6 @@ interface Props {
   showDots?: boolean;
   itemsPerView?: number;
   gap?: number;
-  gapLeft?: number; // Gap específico para o lado esquerdo
-  gapRight?: number; // Gap específico para o lado direito
   autoPlay?: boolean;
   autoPlayDelay?: number;
   centerMode?: boolean;
@@ -145,8 +143,6 @@ const props = withDefaults(defineProps<Props>(), {
   showDots: true,
   itemsPerView: 1,
   gap: 16,
-  gapLeft: undefined, // Se não definido, usa o valor de gap
-  gapRight: undefined, // Se não definido, usa o valor de gap
   autoPlay: false,
   autoPlayDelay: 3000,
   centerMode: false,
@@ -176,38 +172,7 @@ const animationFrame = ref<number>();
 const isPlaying = ref(props.autoPlay);
 
 // Computed
-const isThreeItemsMode = computed(() => {
-  return props.items.length === 3;
-});
-
-const isLessThanThreeItems = computed(() => {
-  return props.items.length < 3;
-});
-
-const isMoreThanThreeItems = computed(() => {
-  return props.items.length > 3;
-});
-
-// Computed para gaps efetivos
-const effectiveGapLeft = computed(() => {
-  return props.gapLeft !== undefined ? props.gapLeft : props.gap;
-});
-
-const effectiveGapRight = computed(() => {
-  return props.gapRight !== undefined ? props.gapRight : props.gap;
-});
-
 const totalSlides = computed(() => {
-  // Para 3 itens, sempre 1 slide
-  if (isThreeItemsMode.value) {
-    return 1;
-  }
-
-  // Para menos de 3 itens, sempre 1 slide (apenas central)
-  if (isLessThanThreeItems.value) {
-    return 1;
-  }
-
   // Calcular número total de slides baseado em items-per-view
   // Começar do slide 0 (não incluir slide -1)
   const maxSlide = Math.max(0, props.items.length - props.itemsPerView);
@@ -231,30 +196,10 @@ const displayItems = computed(() => {
 });
 
 const canGoPrevious = computed(() => {
-  // Para 3 itens, sempre permitir navegação se loop estiver ativo
-  if (isThreeItemsMode.value) {
-    return props.loop;
-  }
-
-  // Para menos de 3 itens, não permitir navegação
-  if (isLessThanThreeItems.value) {
-    return false;
-  }
-
   return props.loop || props.infinite || currentSlide.value > 0;
 });
 
 const canGoNext = computed(() => {
-  // Para 3 itens, sempre permitir navegação se loop estiver ativo
-  if (isThreeItemsMode.value) {
-    return props.loop;
-  }
-
-  // Para menos de 3 itens, não permitir navegação
-  if (isLessThanThreeItems.value) {
-    return false;
-  }
-
   const maxSlide = Math.max(0, props.items.length - props.itemsPerView);
   return props.loop || props.infinite || currentSlide.value < maxSlide;
 });
@@ -273,21 +218,7 @@ const itemClasses = computed(() => {
 });
 
 const dots = computed(() => {
-  // Para loop, mostrar todos os itens
-  if (props.loop) {
-    return props.items;
-  }
-  // Para modo normal, mostrar apenas os slides possíveis
   return props.items.slice(0, totalSlides.value);
-});
-
-// Computed para o índice do dot ativo
-const activeDotIndex = computed(() => {
-  if (props.loop) {
-    // Para loop, usar módulo para garantir índice válido
-    return currentSlide.value % props.items.length;
-  }
-  return currentSlide.value;
 });
 
 // Computed para o item ativo (necessário para o slot de conteúdo)
@@ -301,62 +232,6 @@ const activeItem = computed(() => {
 });
 
 // Métodos
-// Função para calcular o gap apropriado baseado na posição do item
-const getItemGap = (
-  relativePosition: number,
-  itemIndex: number,
-  totalItems: number
-) => {
-  // Para 3 itens, usar gaps específicos
-  if (isThreeItemsMode.value) {
-    if (relativePosition < 0) {
-      // Item à esquerda
-      return effectiveGapLeft.value;
-    } else if (relativePosition > 0) {
-      // Item à direita
-      return effectiveGapRight.value;
-    } else {
-      // Item central - usar gap padrão
-      return props.gap;
-    }
-  }
-
-  // Para outros casos, usar gap padrão
-  return props.gap;
-};
-
-// Função para calcular gap acumulado considerando posições
-const getAccumulatedGap = (
-  startIndex: number,
-  endIndex: number,
-  items: any[]
-) => {
-  let totalGap = 0;
-  for (let i = startIndex; i < endIndex; i++) {
-    if (i < items.length) {
-      const item = items[i];
-      const realIndex = i % props.items.length;
-      const realCurrentSlide = currentSlide.value % props.items.length;
-
-      let relativePos: number;
-      if (props.loop) {
-        let diff = realIndex - realCurrentSlide;
-        if (diff > props.items.length / 2) {
-          diff -= props.items.length;
-        } else if (diff < -props.items.length / 2) {
-          diff += props.items.length;
-        }
-        relativePos = diff;
-      } else {
-        relativePos = i - currentSlide.value;
-      }
-
-      totalGap += getItemGap(relativePos, i, props.items.length);
-    }
-  }
-  return totalGap;
-};
-
 const getItemStyle = (index: number) => {
   const containerWidth = carouselContainer.value?.offsetWidth || 1;
   const item = displayItems.value[index];
@@ -369,10 +244,92 @@ const getItemStyle = (index: number) => {
     itemWidth = props.fixedItemWidth;
   }
 
-  // Calcular relativePosition primeiro para determinar o gap apropriado
+  const itemWidthWithGap = itemWidth + props.gap;
+
+  // Posição base do item
+  let basePosition: number;
+  if (props.loop) {
+    // Para loop, calcular a posição considerando o wrap-around
+    const realIndex = index % props.items.length;
+
+    if (props.variableWidth) {
+      // Para larguras variáveis, calcular posição acumulada baseada no índice real
+      basePosition = props.items.slice(0, realIndex).reduce((acc, prevItem) => {
+        const prevWidth = prevItem?.width || props.fixedItemWidth;
+        return acc + prevWidth + props.gap;
+      }, 0);
+    } else {
+      // Para larguras fixas, usar multiplicação com índice real
+      basePosition = realIndex * itemWidthWithGap;
+    }
+
+    // Para loop, não precisamos de wrap-around na basePosition
+    // O wrap-around é tratado pela lógica de posicionamento final
+  } else if (props.variableWidth) {
+    // Para larguras variáveis, calcular posição acumulada
+    basePosition = displayItems.value
+      .slice(0, index)
+      .reduce((acc, prevItem) => {
+        const prevWidth = prevItem?.width || props.fixedItemWidth;
+        return acc + prevWidth + props.gap;
+      }, 0);
+  } else {
+    // Para larguras fixas, usar multiplicação
+    basePosition = index * itemWidthWithGap;
+  }
+
+  // Offset do slide atual
+  let slideOffset: number;
+  if (props.loop) {
+    // Para loop, usar matemática modular para calcular o offset
+    const realCurrentSlide = currentSlide.value % props.items.length;
+    if (props.variableWidth) {
+      // Para larguras variáveis, calcular offset acumulado baseado no slide real
+      slideOffset = -props.items
+        .slice(0, realCurrentSlide)
+        .reduce((acc, prevItem) => {
+          const prevWidth = prevItem?.width || props.fixedItemWidth;
+          return acc + prevWidth + props.gap;
+        }, 0);
+    } else {
+      // Para larguras fixas, usar multiplicação com slide real
+      slideOffset = -realCurrentSlide * itemWidthWithGap;
+    }
+  } else if (props.variableWidth) {
+    // Para larguras variáveis, calcular offset acumulado até o currentSlide
+    slideOffset = -displayItems.value
+      .slice(0, Math.max(0, currentSlide.value))
+      .reduce((acc, prevItem) => {
+        const prevWidth = prevItem?.width || props.fixedItemWidth;
+        return acc + prevWidth + props.gap;
+      }, 0);
+  } else {
+    slideOffset = -currentSlide.value * itemWidthWithGap;
+  }
+
+  // Offset do drag
+  const dragOffsetPx = dragOffset.value;
+
+  // Para carousel infinito, ajustamos a posição
+  let infiniteOffset = 0;
+  if (props.infinite) {
+    if (props.variableWidth) {
+      // Para larguras variáveis, calcular o offset baseado nos itens duplicados
+      infiniteOffset = displayItems.value
+        .slice(0, props.itemsPerView)
+        .reduce((sum, item) => {
+          return sum + (item?.width || props.fixedItemWidth) + props.gap;
+        }, 0);
+    } else {
+      infiniteOffset = props.itemsPerView * itemWidthWithGap;
+    }
+  }
+
+  // Para loop, usar matemática modular simples
   const realIndex = index % props.items.length;
   const realCurrentSlide = currentSlide.value % props.items.length;
 
+  // Calcular a diferença relativa entre o item e o currentSlide
   let relativePosition: number;
   if (props.loop) {
     // Para loop, calcular a posição relativa considerando wrap-around
@@ -390,134 +347,6 @@ const getItemStyle = (index: number) => {
     relativePosition = index - currentSlide.value;
   }
 
-  // Calcular gap apropriado baseado na posição
-  const itemGap = getItemGap(relativePosition, index, props.items.length);
-  const itemWidthWithGap = itemWidth + itemGap;
-
-  // Posição base do item
-  let basePosition: number;
-  if (props.loop) {
-    // Para loop, calcular a posição considerando o wrap-around
-    const realIndex = index % props.items.length;
-
-    if (props.variableWidth) {
-      // Para larguras variáveis, calcular posição acumulada baseada no índice real
-      basePosition = props.items
-        .slice(0, realIndex)
-        .reduce((acc, prevItem, idx) => {
-          const prevWidth = prevItem?.width || props.fixedItemWidth;
-          const prevRealIndex = idx % props.items.length;
-          const prevRealCurrentSlide = currentSlide.value % props.items.length;
-
-          let prevRelativePos: number;
-          if (props.loop) {
-            let diff = prevRealIndex - prevRealCurrentSlide;
-            if (diff > props.items.length / 2) {
-              diff -= props.items.length;
-            } else if (diff < -props.items.length / 2) {
-              diff += props.items.length;
-            }
-            prevRelativePos = diff;
-          } else {
-            prevRelativePos = idx - currentSlide.value;
-          }
-
-          const prevGap = getItemGap(prevRelativePos, idx, props.items.length);
-          return acc + prevWidth + prevGap;
-        }, 0);
-    } else {
-      // Para larguras fixas, usar multiplicação com índice real
-      basePosition = realIndex * itemWidthWithGap;
-    }
-
-    // Para loop, não precisamos de wrap-around na basePosition
-    // O wrap-around é tratado pela lógica de posicionamento final
-  } else if (props.variableWidth) {
-    // Para larguras variáveis, calcular posição acumulada
-    basePosition = displayItems.value
-      .slice(0, index)
-      .reduce((acc, prevItem, idx) => {
-        const prevWidth = prevItem?.width || props.fixedItemWidth;
-        const prevRelativePos = idx - currentSlide.value;
-        const prevGap = getItemGap(prevRelativePos, idx, props.items.length);
-        return acc + prevWidth + prevGap;
-      }, 0);
-  } else {
-    // Para larguras fixas, usar multiplicação
-    basePosition = index * itemWidthWithGap;
-  }
-
-  // Offset do slide atual
-  let slideOffset: number;
-  if (props.loop) {
-    // Para loop, usar matemática modular para calcular o offset
-    const realCurrentSlide = currentSlide.value % props.items.length;
-    if (props.variableWidth) {
-      // Para larguras variáveis, calcular offset acumulado baseado no slide real
-      slideOffset = -props.items
-        .slice(0, realCurrentSlide)
-        .reduce((acc, prevItem, idx) => {
-          const prevWidth = prevItem?.width || props.fixedItemWidth;
-          const prevRealIndex = idx % props.items.length;
-          const prevRealCurrentSlide = currentSlide.value % props.items.length;
-
-          let prevRelativePos: number;
-          if (props.loop) {
-            let diff = prevRealIndex - prevRealCurrentSlide;
-            if (diff > props.items.length / 2) {
-              diff -= props.items.length;
-            } else if (diff < -props.items.length / 2) {
-              diff += props.items.length;
-            }
-            prevRelativePos = diff;
-          } else {
-            prevRelativePos = idx - currentSlide.value;
-          }
-
-          const prevGap = getItemGap(prevRelativePos, idx, props.items.length);
-          return acc + prevWidth + prevGap;
-        }, 0);
-    } else {
-      // Para larguras fixas, usar multiplicação com slide real
-      slideOffset = -realCurrentSlide * itemWidthWithGap;
-    }
-  } else if (props.variableWidth) {
-    // Para larguras variáveis, calcular offset acumulado até o currentSlide
-    slideOffset = -displayItems.value
-      .slice(0, Math.max(0, currentSlide.value))
-      .reduce((acc, prevItem, idx) => {
-        const prevWidth = prevItem?.width || props.fixedItemWidth;
-        const prevRelativePos = idx - currentSlide.value;
-        const prevGap = getItemGap(prevRelativePos, idx, props.items.length);
-        return acc + prevWidth + prevGap;
-      }, 0);
-  } else {
-    slideOffset = -currentSlide.value * itemWidthWithGap;
-  }
-
-  // Offset do drag
-  const dragOffsetPx = dragOffset.value;
-
-  // Para carousel infinito, ajustamos a posição
-  let infiniteOffset = 0;
-  if (props.infinite) {
-    if (props.variableWidth) {
-      // Para larguras variáveis, calcular o offset baseado nos itens duplicados
-      infiniteOffset = displayItems.value
-        .slice(0, props.itemsPerView)
-        .reduce((sum, item, idx) => {
-          const itemWidth = item?.width || props.fixedItemWidth;
-          const itemRelativePos = idx - currentSlide.value;
-          const itemGap = getItemGap(itemRelativePos, idx, props.items.length);
-          return sum + itemWidth + itemGap;
-        }, 0);
-    } else {
-      infiniteOffset = props.itemsPerView * itemWidthWithGap;
-    }
-  }
-
-  // relativePosition já foi calculada acima
-
   // Verificar se o item está na área de visualização
   const isInViewArea =
     relativePosition >= 0 && relativePosition < props.itemsPerView;
@@ -527,34 +356,14 @@ const getItemStyle = (index: number) => {
 
   // Calcular a posição final baseada na posição relativa
   let finalPosition: number;
-
-  // Validação específica para 3 itens - exibir com sides
-  if (isThreeItemsMode.value) {
-    // Para 3 itens, todos devem estar visíveis com efeito de sides
-    finalPosition =
-      relativePosition * itemWidthWithGap + infiniteOffset + dragOffsetPx;
-  }
-  // Validação para menos de 3 itens - apenas central
-  else if (isLessThanThreeItems.value) {
-    // Para menos de 3 itens, centralizar todos
-    finalPosition = 0 + infiniteOffset + dragOffsetPx;
-  }
-  // Comportamento padrão para mais de 3 itens
-  else if (isInViewArea) {
+  if (isInViewArea) {
     // Item na área de visualização - posição baseada na relativePosition
     finalPosition =
       relativePosition * itemWidthWithGap + infiniteOffset + dragOffsetPx;
   } else {
-    // Item fora da área de visualização - posicionar baseado na relativePosition real
-    // mas fora da área visível para evitar sobreposição
-    if (relativePosition < 0) {
-      // Item à esquerda - posicionar antes da área visível
-      finalPosition = -itemWidthWithGap + infiniteOffset + dragOffsetPx;
-    } else {
-      // Item à direita - posicionar após a área visível
-      finalPosition =
-        props.itemsPerView * itemWidthWithGap + infiniteOffset + dragOffsetPx;
-    }
+    // Item fora da área de visualização - usar a mesma posição do item central
+    finalPosition =
+      centerIndex * itemWidthWithGap + infiniteOffset + dragOffsetPx;
   }
 
   // Calcular distância do centro visual dos itens exibidos
@@ -592,25 +401,7 @@ const getItemStyle = (index: number) => {
   let scale = baseScale;
   let zIndex = 1;
 
-  // Validação específica para 3 itens - efeito de sides
-  if (isThreeItemsMode.value) {
-    // Para 3 itens, criar efeito de sides com central maior
-    if (relativePosition === centerIndex) {
-      scale = maxScale; // Central maior
-      zIndex = 10;
-    } else {
-      scale = 0.8; // Sides menores
-      zIndex = 5;
-    }
-  }
-  // Validação para menos de 3 itens - apenas central
-  else if (isLessThanThreeItems.value) {
-    // Para menos de 3 itens, todos centralizados com escala alta
-    scale = maxScale;
-    zIndex = 10;
-  }
-  // Comportamento padrão para mais de 3 itens
-  else if (isInViewArea) {
+  if (isInViewArea) {
     // Item na área de visualização - calcular escala baseada na proximidade do centro
     let distanceFromCenter: number;
 
@@ -643,28 +434,7 @@ const getItemStyle = (index: number) => {
 
   // Centralizar o carousel
   let centerOffset: number;
-
-  // Validação específica para 3 itens - centralização com sides
-  if (isThreeItemsMode.value) {
-    // Para 3 itens, centralizar com efeito de sides usando gaps apropriados
-    const totalWidth =
-      itemWidth +
-      effectiveGapLeft.value +
-      itemWidth +
-      props.gap +
-      itemWidth +
-      effectiveGapRight.value;
-    centerOffset = (containerWidth - totalWidth) / 2;
-  }
-  // Validação para menos de 3 itens - centralização simples
-  else if (isLessThanThreeItems.value) {
-    // Para menos de 3 itens, centralizar perfeitamente
-    const totalGap = (props.items.length - 1) * props.gap;
-    const totalWidth = props.items.length * itemWidth + totalGap;
-    centerOffset = (containerWidth - totalWidth) / 2;
-  }
-  // Comportamento padrão para mais de 3 itens
-  else if (props.variableWidth) {
+  if (props.variableWidth) {
     // Para larguras variáveis com múltiplos items visíveis:
     // O item que deveria estar no centro visual é currentSlide + centerIndex
     let visualCenterItemIndex: number;
@@ -687,37 +457,18 @@ const getItemStyle = (index: number) => {
       // Para loop, usar props.items em vez de displayItems
       positionOfCenterItem = props.items
         .slice(0, visualCenterItemIndex)
-        .reduce((acc, prevItem, idx) => {
+        .reduce((acc, prevItem) => {
           const prevWidth = prevItem?.width || props.fixedItemWidth;
-          const prevRealIndex = idx % props.items.length;
-          const prevRealCurrentSlide = currentSlide.value % props.items.length;
-
-          let prevRelativePos: number;
-          if (props.loop) {
-            let diff = prevRealIndex - prevRealCurrentSlide;
-            if (diff > props.items.length / 2) {
-              diff -= props.items.length;
-            } else if (diff < -props.items.length / 2) {
-              diff += props.items.length;
-            }
-            prevRelativePos = diff;
-          } else {
-            prevRelativePos = idx - currentSlide.value;
-          }
-
-          const prevGap = getItemGap(prevRelativePos, idx, props.items.length);
-          return acc + prevWidth + prevGap;
+          return acc + prevWidth + props.gap;
         }, 0);
       centerItemWidth =
         props.items[visualCenterItemIndex]?.width || props.fixedItemWidth;
     } else {
       positionOfCenterItem = displayItems.value
         .slice(0, visualCenterItemIndex)
-        .reduce((acc, prevItem, idx) => {
+        .reduce((acc, prevItem) => {
           const prevWidth = prevItem?.width || props.fixedItemWidth;
-          const prevRelativePos = idx - currentSlide.value;
-          const prevGap = getItemGap(prevRelativePos, idx, props.items.length);
-          return acc + prevWidth + prevGap;
+          return acc + prevWidth + props.gap;
         }, 0);
       centerItemWidth =
         displayItems.value[visualCenterItemIndex]?.width ||
@@ -846,18 +597,7 @@ const endDrag = () => {
 };
 
 const next = () => {
-  // Validação específica para 3 itens
-  if (isThreeItemsMode.value) {
-    // Para 3 itens, sempre usar loop
-    currentSlide.value = (currentSlide.value + 1) % props.items.length;
-  }
-  // Validação para menos de 3 itens - não navegar
-  else if (isLessThanThreeItems.value) {
-    // Para menos de 3 itens, não navegar
-    return;
-  }
-  // Comportamento padrão para mais de 3 itens
-  else if (props.loop) {
+  if (props.loop) {
     // Loop usando matemática modular
     currentSlide.value = (currentSlide.value + 1) % props.items.length;
   } else if (props.infinite) {
@@ -878,19 +618,7 @@ const next = () => {
 };
 
 const previous = () => {
-  // Validação específica para 3 itens
-  if (isThreeItemsMode.value) {
-    // Para 3 itens, sempre usar loop
-    currentSlide.value =
-      (currentSlide.value - 1 + props.items.length) % props.items.length;
-  }
-  // Validação para menos de 3 itens - não navegar
-  else if (isLessThanThreeItems.value) {
-    // Para menos de 3 itens, não navegar
-    return;
-  }
-  // Comportamento padrão para mais de 3 itens
-  else if (props.loop) {
+  if (props.loop) {
     // Loop usando matemática modular
     currentSlide.value =
       (currentSlide.value - 1 + props.items.length) % props.items.length;
