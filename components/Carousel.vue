@@ -188,27 +188,30 @@ const isItemsDuplicated = computed(() => {
     return firstHalf.every((item, index) => {
       const correspondingItem = secondHalf[index];
       if (!correspondingItem) return false;
-      
+
       // Se ambos têm id, compara por id (mais eficiente)
       if (item.id !== undefined && correspondingItem.id !== undefined) {
         return item.id === correspondingItem.id;
       }
-      
+
       // Fallback para comparação profunda com JSON.stringify
       // (pode ser lento com objetos muito complexos, mas é robusto)
       try {
         return JSON.stringify(item) === JSON.stringify(correspondingItem);
       } catch (error) {
-        // Se JSON.stringify falhar (objetos circulares, etc.), 
+        // Se JSON.stringify falhar (objetos circulares, etc.),
         // tenta comparação de propriedades principais
         const itemKeys = Object.keys(item);
         const correspondingKeys = Object.keys(correspondingItem);
-        
+
         if (itemKeys.length !== correspondingKeys.length) return false;
-        
-        return itemKeys.every(key => {
+
+        return itemKeys.every((key) => {
           try {
-            return JSON.stringify(item[key]) === JSON.stringify(correspondingItem[key]);
+            return (
+              JSON.stringify(item[key]) ===
+              JSON.stringify(correspondingItem[key])
+            );
           } catch {
             return item[key] === correspondingItem[key];
           }
