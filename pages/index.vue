@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from "vue";
+
 // Dados de exemplo para o carousel
 const sampleImages = [
   {
@@ -34,102 +36,20 @@ const sampleImages = [
     tag: "Tag 3",
     actionLabel: "Ver mais",
   },
-  {
-    id: 4,
-    title: "4 Boutique Hotel Experience",
-    description: "Experiência única e personalizada",
-    imageUrl:
-      "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&h=600&fit=crop",
-    price: "R$ 380/noite",
-    width: 300, // Largura padrão
-    tag: "Tag 4",
-    actionLabel: "Ver mais",
-  },
-  {
-    id: 5,
-    title: "5 Beachfront Villa",
-    description: "Villa privativa com vista para o mar",
-    imageUrl:
-      "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&h=600&fit=crop",
-    price: "R$ 650/noite",
-    width: 350, // Largura média
-    tag: "Tag 5",
-    actionLabel: "Ver mais",
-  },
-  {
-    id: 6,
-    title: "6 Historic Palace Hotel",
-    description: "Elegância clássica em um palácio histórico",
-    imageUrl:
-      "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=600&fit=crop",
-    price: "R$ 520/noite",
-    width: 450, // Largura grande
-    tag: "Tag 6",
-    actionLabel: "Ver mais",
-  },
-  {
-    id: 7,
-    title: "7 Luxury Spa Resort",
-    description: "Relaxamento total com tratamentos de spa",
-    imageUrl:
-      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&h=600&fit=crop",
-    price: "R$ 580/noite",
-    width: 280, // Largura menor
-    tag: "Tag 7",
-    actionLabel: "Ver mais",
-  },
-  {
-    id: 8,
-    title: "8 Modern City Hotel",
-    description: "Design contemporâneo no coração da cidade",
-    imageUrl:
-      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&h=600&fit=crop",
-    price: "R$ 350/noite",
-    width: 320, // Largura padrão
-    tag: "Tag 8",
-    actionLabel: "Ver mais",
-  },
-  {
-    id: 9,
-    title: "9 Tropical Island Resort",
-    description: "Paraíso tropical com praias de areia branca",
-    imageUrl:
-      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&h=600&fit=crop",
-    price: "R$ 720/noite",
-    width: 380, // Largura média-grande
-    tag: "Tag 9",
-    actionLabel: "Ver mais",
-  },
-  {
-    id: 10,
-    title: "10 Cozy Country Inn",
-    description: "Charme rústico no campo com aconchego familiar",
-    imageUrl:
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop",
-    price: "R$ 220/noite",
-    width: 260, // Largura menor
-    tag: "Tag 10",
-    actionLabel: "Ver mais",
-  },
-  {
-    id: 11,
-    title: "11 Skyline Penthouse Hotel",
-    description: "Vista panorâmica da cidade do alto",
-    imageUrl:
-      "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&h=600&fit=crop",
-    price: "R$ 890/noite",
-    width: 420, // Largura grande
-    tag: "Tag 11",
-    actionLabel: "Ver mais",
-  },
 ];
+const computedItems = computed(() => {
+  if (sampleImages.length === 3) {
+    return sampleImages.concat(sampleImages);
+  }
+  return sampleImages;
+});
 </script>
 
 <template>
   <div class="w-full max-w-6xl mx-auto mt-20 mb-20">
     <div class="w-full h-full">
       <Carousel
-        :items="sampleImages"
+        :items="computedItems"
         :items-per-view="3"
         :gap="-170"
         :height="300"

@@ -88,8 +88,12 @@
         v-for="(_, index) in dots"
         :key="index"
         @click="goToSlide(index)"
-        class="w-2 h-2 rounded-full transition-all duration-200"
-        :class="index === currentSlide ? 'bg-blue-600' : 'bg-gray-300'"
+        class="w-3 h-3 rounded-full transition-all duration-200 hover:scale-110 cursor-pointer"
+        :class="
+          index === activeDotIndex
+            ? 'bg-blue-600 scale-110'
+            : 'bg-gray-300 hover:bg-gray-400'
+        "
         :aria-label="`Ir para slide ${index + 1}`"
       />
     </div>
@@ -172,6 +176,52 @@ const animationFrame = ref<number>();
 const isPlaying = ref(props.autoPlay);
 
 // Computed
+const isItemsDuplicated = computed(() => {
+  // Detecta se os itens estão duplicados (como no caso de 3 itens duplicados)
+  if (props.items.length % 2 === 0 && props.items.length > 0) {
+    const halfLength = props.items.length / 2;
+    const firstHalf = props.items.slice(0, halfLength);
+    const secondHalf = props.items.slice(halfLength);
+
+    // Compara se a primeira metade é igual à segunda metade
+    // Usa comparação mais robusta que funciona com qualquer tipo de dados
+    return firstHalf.every((item, index) => {
+      const correspondingItem = secondHalf[index];
+      if (!correspondingItem) return false;
+      
+      // Se ambos têm id, compara por id (mais eficiente)
+      if (item.id !== undefined && correspondingItem.id !== undefined) {
+        return item.id === correspondingItem.id;
+      }
+      
+      // Fallback para comparação profunda com JSON.stringify
+      // (pode ser lento com objetos muito complexos, mas é robusto)
+      try {
+        return JSON.stringify(item) === JSON.stringify(correspondingItem);
+      } catch (error) {
+        // Se JSON.stringify falhar (objetos circulares, etc.), 
+        // tenta comparação de propriedades principais
+        const itemKeys = Object.keys(item);
+        const correspondingKeys = Object.keys(correspondingItem);
+        
+        if (itemKeys.length !== correspondingKeys.length) return false;
+        
+        return itemKeys.every(key => {
+          try {
+            return JSON.stringify(item[key]) === JSON.stringify(correspondingItem[key]);
+          } catch {
+            return item[key] === correspondingItem[key];
+          }
+        });
+      }
+    });
+  }
+  return false;
+});
+
+const originalItemsCount = computed(() => {
+  return isItemsDuplicated.value ? props.items.length / 2 : props.items.length;
+});
 const totalSlides = computed(() => {
   // Calcular número total de slides baseado em items-per-view
   // Começar do slide 0 (não incluir slide -1)
@@ -218,11 +268,41 @@ const itemClasses = computed(() => {
 });
 
 const dots = computed(() => {
+  // Se os itens estão duplicados, mostrar apenas os originais
+  if (isItemsDuplicated.value) {
+    return props.items.slice(0, originalItemsCount.value);
+  }
+
+  // Para loop, mostrar todos os itens
+  if (props.loop) {
+    return props.items;
+  }
+  // Para modo normal, mostrar apenas os slides possíveis
   return props.items.slice(0, totalSlides.value);
+});
+
+// Computed para o índice do dot ativo
+const activeDotIndex = computed(() => {
+  // Se os itens estão duplicados, mapear para os originais
+  if (isItemsDuplicated.value) {
+    return currentSlide.value % originalItemsCount.value;
+  }
+
+  if (props.loop) {
+    // Para loop, usar módulo para garantir índice válido
+    return currentSlide.value % props.items.length;
+  }
+  return currentSlide.value;
 });
 
 // Computed para o item ativo (necessário para o slot de conteúdo)
 const activeItem = computed(() => {
+  // Se os itens estão duplicados, mapear para os originais
+  if (isItemsDuplicated.value) {
+    const index = currentSlide.value % originalItemsCount.value;
+    return props.items[index];
+  }
+
   if (props.loop) {
     // Para loop, usar módulo para garantir índice válido
     const index = currentSlide.value % props.items.length;
@@ -639,7 +719,19 @@ const previous = () => {
 };
 
 const goToSlide = (index: number) => {
-  currentSlide.value = index;
+  // Se os itens estão duplicados, navegar inteligentemente entre os conjuntos
+  if (isItemsDuplicated.value) {
+    const originalCount = originalItemsCount.value;
+    // Se estamos no primeiro conjunto, ir para o índice correspondente no segundo conjunto
+    // Se estamos no segundo conjunto, ir para o índice correspondente no primeiro conjunto
+    if (currentSlide.value < originalCount) {
+      currentSlide.value = index + originalCount; // Ir para o segundo conjunto
+    } else {
+      currentSlide.value = index; // Ir para o primeiro conjunto
+    }
+  } else {
+    currentSlide.value = index;
+  }
   emit("slideChange", currentSlide.value);
 };
 
