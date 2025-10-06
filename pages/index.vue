@@ -25,28 +25,38 @@ const sampleImages = [
     tag: "Tag 2",
     actionLabel: "Ver mais",
   },
-  {
-    id: 3,
-    title: "3 Urban Business Hotel",
-    description: "Localização central para viagens de negócios",
-    imageUrl:
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop",
-    price: "R$ 280/noite",
-    width: 500, // Largura maior (horizontal)
-    tag: "Tag 3",
-    actionLabel: "Ver mais",
-  },
 ];
 const computedItems = computed(() => {
-  if (sampleImages.length === 3) {
-    return sampleImages.concat(sampleImages);
-  }
   return sampleImages;
 });
 </script>
 
 <template>
   <div class="w-full max-w-6xl mx-auto mt-20 mb-20">
+    <!-- Navigation Menu -->
+    <div class="mb-8 p-4 bg-gray-100 rounded-lg">
+      <h2 class="text-lg font-semibold mb-4">Carousel Navigation</h2>
+      <div class="flex flex-wrap gap-4">
+        <NuxtLink
+          to="/tests"
+          class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        >
+          🧪 All Tests
+        </NuxtLink>
+        <NuxtLink
+          to="/test-all-cases"
+          class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+        >
+          Test All Cases
+        </NuxtLink>
+        <NuxtLink
+          to="/test-two-items-debug"
+          class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+        >
+          Test Two Items Debug
+        </NuxtLink>
+      </div>
+    </div>
     <div class="w-full h-full">
       <div class="max-w-4xl">
         <Carousel
@@ -87,60 +97,5 @@ const computedItems = computed(() => {
 
     <!-- Separador -->
     <div class="my-16 border-t border-gray-200"></div>
-    <!-- 
-    <GenericCarousel
-      :items="sampleImages"
-      :autoplay="true"
-      :autoplay-interval="4000"
-      :show-arrows="true"
-      :show-indicators="true"
-      :show-progress-bar="true"
-      :show-play-pause="true"
-      :show-content="true"
-      :max-width="'100%'"
-      :height="600"
-      :side-item-opacity="0.5"
-      :center-item-width="100"
-      :side-item-width="100"
-    >
-      <template #side-item="{ item }">
-        <div class="w-full h-full rounded-xl overflow-hidden">
-          <NuxtImg
-            :src="item.imageUrl"
-            :alt="item.title"
-            class="w-full h-full object-cover"
-          />
-        </div>
-      </template>
-
-      <template #center-item="{ item }">
-        <div class="w-full h-full rounded-xl overflow-hidden shadow-2xl">
-          <NuxtImg
-            :src="item.imageUrl"
-            :alt="item.alt"
-            class="w-full h-full object-cover"
-          />
-        </div>
-      </template>
-
-      <template #content="{ item }">
-        <div
-          class="text-xs uppercase font-semibold tracking-widest text-gray-500 mb-2"
-        >
-          {{ item.tag }}
-        </div>
-        <h2 class="text-2xl font-bold text-gray-800 mb-3">
-          {{ item.title }}
-        </h2>
-        <p class="text-gray-600 mb-4">
-          {{ item.description }}
-        </p>
-        <div
-          class="text-green-600 font-medium cursor-pointer hover:text-green-700 transition-colors"
-        >
-          {{ item.actionLabel }}
-        </div>
-      </template>
-    </GenericCarousel> -->
   </div>
 </template>

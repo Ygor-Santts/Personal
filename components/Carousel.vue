@@ -1,14 +1,14 @@
 <template>
   <div class="w-full">
-    <!-- Container do carrossel -->
+    <!-- Carousel container -->
     <div
       class="relative w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
       :style="{ height: `${height}px` }"
       tabindex="0"
       role="region"
-      aria-label="Carrossel de imagens"
+      aria-label="Image carousel"
     >
-      <!-- Container do carousel -->
+      <!-- Carousel container -->
       <div
         ref="carouselContainer"
         class="relative h-full overflow-hidden"
@@ -16,7 +16,7 @@
         @mousedown="startDrag"
         @touchstart="startDrag"
       >
-        <!-- Items do carousel -->
+        <!-- Carousel items -->
         <div
           v-for="(item, index) in displayItems"
           :key="`${item.id}-${index}`"
@@ -28,13 +28,13 @@
         </div>
       </div>
 
-      <!-- Navegação por setas -->
+      <!-- Arrow navigation -->
       <button
         v-if="showArrows"
         @click="previous"
         class="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/80 hover:bg-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
         :disabled="!canGoPrevious"
-        aria-label="Slide anterior"
+        aria-label="Previous slide"
       >
         <svg
           class="w-6 h-6 text-gray-700"
@@ -56,7 +56,7 @@
         @click="next"
         class="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/80 hover:bg-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
         :disabled="!canGoNext"
-        aria-label="Próximo slide"
+        aria-label="Next slide"
       >
         <svg
           class="w-6 h-6 text-gray-700"
@@ -73,7 +73,7 @@
         </svg>
       </button>
     </div>
-    <!-- Seção de conteúdo externa -->
+    <!-- External content section -->
 
     <div v-if="showContent" class="mt-4 text-center w-full flex justify-center">
       <Transition name="content-fade" mode="out-in">
@@ -84,7 +84,7 @@
     </div>
   </div>
 
-  <!-- Indicadores de página -->
+  <!-- Page indicators -->
   <div class="flex justify-center items-center gap-2 mt-8">
     <div v-if="showDots">
       <div
@@ -100,7 +100,7 @@
               ? 'bg-foundation-verde1 scale-110 w-6'
               : 'bg-neutral-3 hover:bg-gray-400'
           "
-          :aria-label="`Ir para slide ${index + 1}`"
+          :aria-label="`Go to slide ${index + 1}`"
         />
       </div>
     </div>
@@ -112,7 +112,7 @@
       <div
         class="flex justify-center rounded-2xl items-center gap-2 bg-[#F1EFE79E] w-8 h-8 cursor-pointer hover:bg-[#E8E6DD] transition-colors duration-200"
       >
-        <!-- Ícone de Play (quando pausado) -->
+        <!-- Play icon (when paused) -->
         <svg
           v-if="!isPlaying"
           xmlns="http://www.w3.org/2000/svg"
@@ -123,7 +123,7 @@
         >
           <path d="M0 0.5L0 13.5L10 7L0 0.5Z" fill="#004851" />
         </svg>
-        <!-- Ícone de Pause (quando tocando) -->
+        <!-- Pause icon (when playing) -->
         <svg
           v-else
           xmlns="http://www.w3.org/2000/svg"
@@ -143,17 +143,21 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, readonly, ref } from "vue";
 
+defineOptions({
+  name: "Carousel",
+});
+
 interface CarouselItem {
   id: string | number;
-  width?: number; // Largura customizada do item
-  height?: number; // Altura customizada do item
+  width?: number; // Custom item width
+  height?: number; // Custom item height
   [key: string]: any;
 }
 
 interface Props {
   items: CarouselItem[];
   infinite?: boolean;
-  loop?: boolean; // Loop infinito usando matemática modular (mais eficiente que infinite)
+  loop?: boolean; // Infinite loop using modular math (more efficient than infinite)
   showArrows?: boolean;
   showDots?: boolean;
   itemsPerView?: number;
@@ -163,12 +167,13 @@ interface Props {
   centerMode?: boolean;
   height?: number;
   dragSensitivity?: number;
-  variableWidth?: boolean; // Permite larguras diferentes para cada item
-  fixedItemWidth?: number; // Largura fixa quando variableWidth é false
-  // Novas props para texto e conteúdo
+  variableWidth?: boolean; // Allows different widths for each item
+  fixedItemWidth?: number; // Fixed width when variableWidth is false
+  // New props for text and content
   title?: string;
   subtitle?: string;
   showContent?: boolean;
+  autoDuplicate?: boolean; // Auto-duplicate items when 3 or fewer items
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -185,10 +190,11 @@ const props = withDefaults(defineProps<Props>(), {
   dragSensitivity: 1,
   variableWidth: false,
   fixedItemWidth: 224.427,
-  // Novas props com valores padrão
+  // New props with default values
   title: "",
   subtitle: "",
   showContent: false,
+  autoDuplicate: true, // Auto-duplicate when 3 or fewer items
 });
 
 const emit = defineEmits<{
@@ -208,83 +214,88 @@ const isPlaying = ref(false);
 
 // Computed
 const isItemsDuplicated = computed(() => {
-  // Detecta se os itens estão duplicados (como no caso de 3 itens duplicados)
-  if (props.items.length % 2 === 0 && props.items.length > 0) {
-    const halfLength = props.items.length / 2;
-    const firstHalf = props.items.slice(0, halfLength);
-    const secondHalf = props.items.slice(halfLength);
+  // Detect if items are duplicated (auto-duplication when 3 or fewer items)
+  return props.autoDuplicate && props.items.length <= 3;
+});
 
-    // Compara se a primeira metade é igual à segunda metade
-    // Usa comparação mais robusta que funciona com qualquer tipo de dados
-    return firstHalf.every((item, index) => {
-      const correspondingItem = secondHalf[index];
-      if (!correspondingItem) return false;
-
-      // Se ambos têm id, compara por id (mais eficiente)
-      if (item.id !== undefined && correspondingItem.id !== undefined) {
-        return item.id === correspondingItem.id;
-      }
-
-      // Fallback para comparação profunda com JSON.stringify
-      // (pode ser lento com objetos muito complexos, mas é robusto)
-      try {
-        return JSON.stringify(item) === JSON.stringify(correspondingItem);
-      } catch (error) {
-        // Se JSON.stringify falhar (objetos circulares, etc.),
-        // tenta comparação de propriedades principais
-        const itemKeys = Object.keys(item);
-        const correspondingKeys = Object.keys(correspondingItem);
-
-        if (itemKeys.length !== correspondingKeys.length) return false;
-
-        return itemKeys.every((key) => {
-          try {
-            return (
-              JSON.stringify(item[key]) ===
-              JSON.stringify(correspondingItem[key])
-            );
-          } catch {
-            return item[key] === correspondingItem[key];
-          }
-        });
-      }
-    });
+// Auto-duplicate items when there are 3 or fewer items
+const processedItems = computed(() => {
+  if (!props.autoDuplicate || props.items.length > 3) {
+    return props.items;
   }
-  return false;
+
+  // If there are 3 or fewer items, duplicate them with unique IDs
+  const duplicatedItems = props.items.map((item, index) => ({
+    ...item,
+    id: `${item.id}-duplicate-${index}`,
+    isDuplicate: true,
+    originalId: item.id,
+  }));
+
+  return [...props.items, ...duplicatedItems];
 });
 
 const originalItemsCount = computed(() => {
-  return isItemsDuplicated.value ? props.items.length / 2 : props.items.length;
+  return props.items.length;
 });
 const totalSlides = computed(() => {
-  // Calcular número total de slides baseado em items-per-view
-  // Começar do slide 0 (não incluir slide -1)
-  const maxSlide = Math.max(0, props.items.length - props.itemsPerView);
-  return Math.max(1, maxSlide + 1); // +1 para incluir slide 0
+  // Calculate total number of slides based on items-per-view
+  // Start from slide 0 (don't include slide -1)
+
+  // For duplicated items, calculate based on how many slides we can actually show
+  if (isItemsDuplicated.value) {
+    // With duplicated items, we want to show all possible slides
+    // For 2 items (4 total) with itemsPerView=3: slides 0,1 (showing items 0,1,2 and 1,2,3)
+    const maxSlide = Math.max(
+      0,
+      processedItems.value.length - props.itemsPerView
+    );
+    return Math.max(1, maxSlide + 1); // +1 to include slide 0
+  }
+
+  const maxSlide = Math.max(
+    0,
+    processedItems.value.length - props.itemsPerView
+  );
+  return Math.max(1, maxSlide + 1); // +1 to include slide 0
 });
 
 const displayItems = computed(() => {
-  // Para loop, sempre retorna apenas os itens originais
+  // For loop, always return only the original items
   if (props.loop) {
-    return props.items;
+    return processedItems.value;
   }
 
   if (!props.infinite) {
-    return props.items;
+    return processedItems.value;
   }
 
-  // Para carousel infinito, duplicamos os itens
-  const beforeItems = props.items.slice(-props.itemsPerView);
-  const afterItems = props.items.slice(0, props.itemsPerView);
-  return [...beforeItems, ...props.items, ...afterItems];
+  // For infinite carousel, duplicate the items
+  const beforeItems = processedItems.value.slice(-props.itemsPerView);
+  const afterItems = processedItems.value.slice(0, props.itemsPerView);
+  return [...beforeItems, ...processedItems.value, ...afterItems];
 });
 
 const canGoPrevious = computed(() => {
+  // For duplicated items, use the same logic as normal items
+  if (isItemsDuplicated.value) {
+    return props.loop || props.infinite || currentSlide.value > 0;
+  }
+
   return props.loop || props.infinite || currentSlide.value > 0;
 });
 
 const canGoNext = computed(() => {
-  const maxSlide = Math.max(0, props.items.length - props.itemsPerView);
+  // For duplicated items, use the same logic as normal items but with totalSlides
+  if (isItemsDuplicated.value) {
+    const maxSlide = totalSlides.value - 1;
+    return props.loop || props.infinite || currentSlide.value < maxSlide;
+  }
+
+  const maxSlide = Math.max(
+    0,
+    processedItems.value.length - props.itemsPerView
+  );
   return props.loop || props.infinite || currentSlide.value < maxSlide;
 });
 
@@ -294,63 +305,58 @@ const containerClasses = computed(() => {
 
 const itemClasses = computed(() => {
   return [
-    // Só aplica transição quando não está arrastando
+    // Only apply transition when not dragging
     !isDragging.value && "transition-all duration-300 ease-out",
-    // Otimizações de performance
+    // Performance optimizations
     "transform-gpu",
   ];
 });
 
 const dots = computed(() => {
-  // Se os itens estão duplicados, mostrar apenas os originais
-  if (isItemsDuplicated.value) {
-    return props.items.slice(0, originalItemsCount.value);
-  }
-
-  // Para loop, mostrar todos os itens
+  // Always show only the original items for dots
   if (props.loop) {
     return props.items;
   }
-  // Para modo normal, mostrar apenas os slides possíveis
+  // For normal mode, show only possible slides
   return props.items.slice(0, totalSlides.value);
 });
 
-// Computed para o índice do dot ativo
+// Computed for active dot index
 const activeDotIndex = computed(() => {
-  // Se os itens estão duplicados, mapear para os originais
+  // Always map to original items for dots
   if (isItemsDuplicated.value) {
     return currentSlide.value % originalItemsCount.value;
   }
 
   if (props.loop) {
-    // Para loop, usar módulo para garantir índice válido
+    // For loop, use module to ensure valid index
     return currentSlide.value % props.items.length;
   }
   return currentSlide.value;
 });
 
-// Computed para o item ativo (necessário para o slot de conteúdo)
+// Computed for active item (needed for content slot)
 const activeItem = computed(() => {
-  // Se os itens estão duplicados, mapear para os originais
+  // Always map to original items for content
   if (isItemsDuplicated.value) {
     const index = currentSlide.value % originalItemsCount.value;
     return props.items[index];
   }
 
   if (props.loop) {
-    // Para loop, usar módulo para garantir índice válido
+    // For loop, use module to ensure valid index
     const index = currentSlide.value % props.items.length;
     return props.items[index];
   }
   return props.items[currentSlide.value];
 });
 
-// Métodos
+// Methods
 const getItemStyle = (index: number) => {
   const containerWidth = carouselContainer.value?.offsetWidth || 1;
   const item = displayItems.value[index];
 
-  // Calcular largura do item
+  // Calculate item width
   let itemWidth: number;
   if (props.variableWidth && item?.width) {
     itemWidth = item.width;
@@ -360,18 +366,20 @@ const getItemStyle = (index: number) => {
 
   const itemWidthWithGap = itemWidth + props.gap;
 
-  // Posição base do item
+  // Base position of item
   let basePosition: number;
   if (props.loop) {
     // Para loop, calcular a posição considerando o wrap-around
-    const realIndex = index % props.items.length;
+    const realIndex = index % processedItems.value.length;
 
     if (props.variableWidth) {
       // Para larguras variáveis, calcular posição acumulada baseada no índice real
-      basePosition = props.items.slice(0, realIndex).reduce((acc, prevItem) => {
-        const prevWidth = prevItem?.width || props.fixedItemWidth;
-        return acc + prevWidth + props.gap;
-      }, 0);
+      basePosition = processedItems.value
+        .slice(0, realIndex)
+        .reduce((acc, prevItem) => {
+          const prevWidth = prevItem?.width || props.fixedItemWidth;
+          return acc + prevWidth + props.gap;
+        }, 0);
     } else {
       // Para larguras fixas, usar multiplicação com índice real
       basePosition = realIndex * itemWidthWithGap;
@@ -396,10 +404,10 @@ const getItemStyle = (index: number) => {
   let slideOffset: number;
   if (props.loop) {
     // Para loop, usar matemática modular para calcular o offset
-    const realCurrentSlide = currentSlide.value % props.items.length;
+    const realCurrentSlide = currentSlide.value % processedItems.value.length;
     if (props.variableWidth) {
       // Para larguras variáveis, calcular offset acumulado baseado no slide real
-      slideOffset = -props.items
+      slideOffset = -processedItems.value
         .slice(0, realCurrentSlide)
         .reduce((acc, prevItem) => {
           const prevWidth = prevItem?.width || props.fixedItemWidth;
@@ -440,8 +448,8 @@ const getItemStyle = (index: number) => {
   }
 
   // Para loop, usar matemática modular simples
-  const realIndex = index % props.items.length;
-  const realCurrentSlide = currentSlide.value % props.items.length;
+  const realIndex = index % processedItems.value.length;
+  const realCurrentSlide = currentSlide.value % processedItems.value.length;
 
   // Calcular a diferença relativa entre o item e o currentSlide
   let relativePosition: number;
@@ -450,10 +458,10 @@ const getItemStyle = (index: number) => {
     let diff = realIndex - realCurrentSlide;
 
     // Ajustar para o wrap-around (considerar a menor distância)
-    if (diff > props.items.length / 2) {
-      diff -= props.items.length;
-    } else if (diff < -props.items.length / 2) {
-      diff += props.items.length;
+    if (diff > processedItems.value.length / 2) {
+      diff -= processedItems.value.length;
+    } else if (diff < -processedItems.value.length / 2) {
+      diff += processedItems.value.length;
     }
 
     relativePosition = diff;
@@ -555,7 +563,7 @@ const getItemStyle = (index: number) => {
     if (props.loop) {
       // Para loop, usar matemática modular
       visualCenterItemIndex =
-        (currentSlide.value + centerIndex) % props.items.length;
+        (currentSlide.value + centerIndex) % processedItems.value.length;
     } else {
       visualCenterItemIndex = Math.max(
         0,
@@ -568,15 +576,16 @@ const getItemStyle = (index: number) => {
     let centerItemWidth: number;
 
     if (props.loop) {
-      // Para loop, usar props.items em vez de displayItems
-      positionOfCenterItem = props.items
+      // Para loop, usar processedItems em vez de displayItems
+      positionOfCenterItem = processedItems.value
         .slice(0, visualCenterItemIndex)
         .reduce((acc, prevItem) => {
           const prevWidth = prevItem?.width || props.fixedItemWidth;
           return acc + prevWidth + props.gap;
         }, 0);
       centerItemWidth =
-        props.items[visualCenterItemIndex]?.width || props.fixedItemWidth;
+        processedItems.value[visualCenterItemIndex]?.width ||
+        props.fixedItemWidth;
     } else {
       positionOfCenterItem = displayItems.value
         .slice(0, visualCenterItemIndex)
@@ -713,18 +722,21 @@ const endDrag = () => {
 const next = () => {
   if (props.loop) {
     // Loop usando matemática modular
-    currentSlide.value = (currentSlide.value + 1) % props.items.length;
+    currentSlide.value = (currentSlide.value + 1) % processedItems.value.length;
   } else if (props.infinite) {
     currentSlide.value++;
 
     // Reset para o início quando necessário
-    if (currentSlide.value >= props.items.length) {
+    if (currentSlide.value >= processedItems.value.length) {
       setTimeout(() => {
         currentSlide.value = 0;
       }, 300);
     }
   } else {
-    const maxSlide = Math.max(0, props.items.length - props.itemsPerView);
+    const maxSlide = Math.max(
+      0,
+      processedItems.value.length - props.itemsPerView
+    );
     currentSlide.value = Math.min(currentSlide.value + 1, maxSlide);
   }
 
@@ -735,14 +747,15 @@ const previous = () => {
   if (props.loop) {
     // Loop usando matemática modular
     currentSlide.value =
-      (currentSlide.value - 1 + props.items.length) % props.items.length;
+      (currentSlide.value - 1 + processedItems.value.length) %
+      processedItems.value.length;
   } else if (props.infinite) {
     currentSlide.value--;
 
     // Reset para o fim quando necessário
     if (currentSlide.value < 0) {
       setTimeout(() => {
-        currentSlide.value = props.items.length - 1;
+        currentSlide.value = processedItems.value.length - 1;
       }, 300);
     }
   } else {
@@ -753,15 +766,15 @@ const previous = () => {
 };
 
 const goToSlide = (index: number) => {
-  // Se os itens estão duplicados, navegar inteligentemente entre os conjuntos
+  // For duplicated items, navigate to the corresponding position
   if (isItemsDuplicated.value) {
     const originalCount = originalItemsCount.value;
-    // Se estamos no primeiro conjunto, ir para o índice correspondente no segundo conjunto
-    // Se estamos no segundo conjunto, ir para o índice correspondente no primeiro conjunto
+    // If we're in the first set, go to the corresponding index in the second set
+    // If we're in the second set, go to the corresponding index in the first set
     if (currentSlide.value < originalCount) {
-      currentSlide.value = index + originalCount; // Ir para o segundo conjunto
+      currentSlide.value = index + originalCount; // Go to second set
     } else {
-      currentSlide.value = index; // Ir para o primeiro conjunto
+      currentSlide.value = index; // Go to first set
     }
   } else {
     currentSlide.value = index;
