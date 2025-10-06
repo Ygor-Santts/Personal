@@ -1,13 +1,5 @@
 <template>
   <div class="w-full">
-    <!-- Título e subtítulo -->
-    <div v-if="title || subtitle" class="text-center mb-6">
-      <h2 v-if="title" class="text-2xl font-bold text-gray-800 mb-2">
-        {{ title }}
-      </h2>
-      <p v-if="subtitle" class="text-gray-600">{{ subtitle }}</p>
-    </div>
-
     <!-- Container do carrossel -->
     <div
       class="relative w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
@@ -81,25 +73,9 @@
         </svg>
       </button>
     </div>
-
-    <!-- Indicadores de página -->
-    <div v-if="showDots" class="flex justify-center mt-4 gap-2">
-      <button
-        v-for="(_, index) in dots"
-        :key="index"
-        @click="goToSlide(index)"
-        class="w-3 h-3 rounded-full transition-all duration-200 hover:scale-110 cursor-pointer"
-        :class="
-          index === activeDotIndex
-            ? 'bg-blue-600 scale-110'
-            : 'bg-gray-300 hover:bg-gray-400'
-        "
-        :aria-label="`Ir para slide ${index + 1}`"
-      />
-    </div>
-
     <!-- Seção de conteúdo externa -->
-    <div v-if="showContent" class="mt-6 text-center space-y-3">
+
+    <div v-if="showContent" class="mt-4 text-center w-full flex justify-center">
       <Transition name="content-fade" mode="out-in">
         <div :key="currentSlide" class="transition-all duration-300 ease-out">
           <slot name="content" :item="activeItem" :index="currentSlide" />
@@ -107,10 +83,65 @@
       </Transition>
     </div>
   </div>
+
+  <!-- Indicadores de página -->
+  <div class="flex justify-center items-center gap-2 mt-8">
+    <div v-if="showDots">
+      <div
+        class="flex justify-center rounded-2xl items-center gap-2 bg-[#F1EFE79E] w-[88px] h-8"
+      >
+        <button
+          v-for="(_, index) in dots"
+          :key="index"
+          @click="goToSlide(index)"
+          class="w-1.5 h-1.5 rounded-full transition-all duration-200 hover:scale-110 cursor-pointer"
+          :class="
+            index === activeDotIndex
+              ? 'bg-foundation-verde1 scale-110 w-6'
+              : 'bg-neutral-3 hover:bg-gray-400'
+          "
+          :aria-label="`Ir para slide ${index + 1}`"
+        />
+      </div>
+    </div>
+    <div
+      v-if="autoPlay"
+      class="flex justify-center items-center"
+      @click="toggleAutoPlay"
+    >
+      <div
+        class="flex justify-center rounded-2xl items-center gap-2 bg-[#F1EFE79E] w-8 h-8 cursor-pointer hover:bg-[#E8E6DD] transition-colors duration-200"
+      >
+        <!-- Ícone de Play (quando pausado) -->
+        <svg
+          v-if="!isPlaying"
+          xmlns="http://www.w3.org/2000/svg"
+          width="10"
+          height="14"
+          viewBox="0 0 10 14"
+          fill="none"
+        >
+          <path d="M0 0.5L0 13.5L10 7L0 0.5Z" fill="#004851" />
+        </svg>
+        <!-- Ícone de Pause (quando tocando) -->
+        <svg
+          v-else
+          xmlns="http://www.w3.org/2000/svg"
+          width="10"
+          height="14"
+          viewBox="0 0 10 14"
+          fill="none"
+        >
+          <rect y="0.5" width="3" height="13" fill="#004851" />
+          <rect x="7" y="0.5" width="3" height="13" fill="#004851" />
+        </svg>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, readonly } from "vue";
+import { computed, onMounted, onUnmounted, readonly, ref } from "vue";
 
 interface CarouselItem {
   id: string | number;
@@ -173,7 +204,7 @@ const dragCurrentX = ref(0);
 const dragOffset = ref(0);
 const autoPlayTimer = ref<NodeJS.Timeout>();
 const animationFrame = ref<number>();
-const isPlaying = ref(props.autoPlay);
+const isPlaying = ref(false);
 
 // Computed
 const isItemsDuplicated = computed(() => {
@@ -739,15 +770,17 @@ const goToSlide = (index: number) => {
 };
 
 const startAutoPlay = () => {
+  if (!props.autoPlay) return;
+
   if (autoPlayTimer.value) {
     clearInterval(autoPlayTimer.value);
   }
-
+  console.log("Starting autoplay");
   isPlaying.value = true;
   autoPlayTimer.value = setInterval(() => {
     if (canGoNext.value) {
       next();
-    } else if (props.infinite) {
+    } else if (props.infinite || props.loop) {
       next();
     } else {
       currentSlide.value = 0;
@@ -766,7 +799,7 @@ const stopAutoPlay = () => {
 const toggleAutoPlay = () => {
   if (isPlaying.value) {
     stopAutoPlay();
-  } else {
+  } else if (props.autoPlay) {
     startAutoPlay();
   }
 };
@@ -810,7 +843,7 @@ onMounted(() => {
   const handleVisibilityChange = () => {
     if (document.hidden) {
       stopAutoPlay();
-    } else if (props.autoPlay) {
+    } else if (props.autoPlay && isPlaying.value) {
       startAutoPlay();
     }
   };

@@ -14,9 +14,9 @@ type HydrationStrategies = {
 type LazyComponent<T> = (T & DefineComponent<HydrationStrategies, {}, {}, {}, {}, {}, {}, { hydrated: () => void }>)
 
 interface _GlobalComponents {
-      'CarouselExamples': typeof import("../../components/CarouselExamples.vue")['default']
+      'CarouselStories': typeof import("../../components/Carousel.stories.vue")['default']
+    'Carousel': typeof import("../../components/Carousel.vue")['default']
     'GenericCarousel': typeof import("../../components/GenericCarousel.vue")['default']
-    'InfoCard': typeof import("../../components/InfoCard.vue")['default']
     'NuxtWelcome': typeof import("../../node_modules/.pnpm/nuxt@3.19.2_@parcel+watcher@2.5.1_@types+node@24.5.2_@vue+compiler-sfc@3.5.21_db0@0.3.2_23c94d9768497a145b4094957351b646/node_modules/nuxt/dist/app/components/welcome.vue")['default']
     'NuxtLayout': typeof import("../../node_modules/.pnpm/nuxt@3.19.2_@parcel+watcher@2.5.1_@types+node@24.5.2_@vue+compiler-sfc@3.5.21_db0@0.3.2_23c94d9768497a145b4094957351b646/node_modules/nuxt/dist/app/components/nuxt-layout")['default']
     'NuxtErrorBoundary': typeof import("../../node_modules/.pnpm/nuxt@3.19.2_@parcel+watcher@2.5.1_@types+node@24.5.2_@vue+compiler-sfc@3.5.21_db0@0.3.2_23c94d9768497a145b4094957351b646/node_modules/nuxt/dist/app/components/nuxt-error-boundary.vue")['default']
@@ -43,9 +43,9 @@ interface _GlobalComponents {
     'Body': typeof import("../../node_modules/.pnpm/nuxt@3.19.2_@parcel+watcher@2.5.1_@types+node@24.5.2_@vue+compiler-sfc@3.5.21_db0@0.3.2_23c94d9768497a145b4094957351b646/node_modules/nuxt/dist/head/runtime/components")['Body']
     'NuxtIsland': typeof import("../../node_modules/.pnpm/nuxt@3.19.2_@parcel+watcher@2.5.1_@types+node@24.5.2_@vue+compiler-sfc@3.5.21_db0@0.3.2_23c94d9768497a145b4094957351b646/node_modules/nuxt/dist/app/components/nuxt-island")['default']
     'NuxtRouteAnnouncer': typeof import("../../node_modules/.pnpm/nuxt@3.19.2_@parcel+watcher@2.5.1_@types+node@24.5.2_@vue+compiler-sfc@3.5.21_db0@0.3.2_23c94d9768497a145b4094957351b646/node_modules/nuxt/dist/app/components/server-placeholder")['default']
-      'LazyCarouselExamples': LazyComponent<typeof import("../../components/CarouselExamples.vue")['default']>
+      'LazyCarouselStories': LazyComponent<typeof import("../../components/Carousel.stories.vue")['default']>
+    'LazyCarousel': LazyComponent<typeof import("../../components/Carousel.vue")['default']>
     'LazyGenericCarousel': LazyComponent<typeof import("../../components/GenericCarousel.vue")['default']>
-    'LazyInfoCard': LazyComponent<typeof import("../../components/InfoCard.vue")['default']>
     'LazyNuxtWelcome': LazyComponent<typeof import("../../node_modules/.pnpm/nuxt@3.19.2_@parcel+watcher@2.5.1_@types+node@24.5.2_@vue+compiler-sfc@3.5.21_db0@0.3.2_23c94d9768497a145b4094957351b646/node_modules/nuxt/dist/app/components/welcome.vue")['default']>
     'LazyNuxtLayout': LazyComponent<typeof import("../../node_modules/.pnpm/nuxt@3.19.2_@parcel+watcher@2.5.1_@types+node@24.5.2_@vue+compiler-sfc@3.5.21_db0@0.3.2_23c94d9768497a145b4094957351b646/node_modules/nuxt/dist/app/components/nuxt-layout")['default']>
     'LazyNuxtErrorBoundary': LazyComponent<typeof import("../../node_modules/.pnpm/nuxt@3.19.2_@parcel+watcher@2.5.1_@types+node@24.5.2_@vue+compiler-sfc@3.5.21_db0@0.3.2_23c94d9768497a145b4094957351b646/node_modules/nuxt/dist/app/components/nuxt-error-boundary.vue")['default']>
