@@ -323,32 +323,45 @@ const dots = computed(() => {
 
 // Computed for active dot index
 const activeDotIndex = computed(() => {
+  // Calculate the visual center index (same as activeItem)
+  const centerIndex = Math.floor(props.itemsPerView / 2);
+  const visualActiveIndex = currentSlide.value + centerIndex;
+
   // Always map to original items for dots
   if (isItemsDuplicated.value) {
-    return currentSlide.value % originalItemsCount.value;
+    return visualActiveIndex % originalItemsCount.value;
   }
 
   if (props.loop) {
     // For loop, use module to ensure valid index
-    return currentSlide.value % props.items.length;
+    return visualActiveIndex % props.items.length;
   }
-  return currentSlide.value;
+
+  // Ensure index is within bounds
+  return Math.min(visualActiveIndex, props.items.length - 1);
 });
 
 // Computed for active item (needed for content slot)
 const activeItem = computed(() => {
+  // Calculate the visual center index
+  const centerIndex = Math.floor(props.itemsPerView / 2);
+  const visualActiveIndex = currentSlide.value + centerIndex;
+
   // Always map to original items for content
   if (isItemsDuplicated.value) {
-    const index = currentSlide.value % originalItemsCount.value;
+    const index = visualActiveIndex % originalItemsCount.value;
     return props.items[index];
   }
 
   if (props.loop) {
     // For loop, use module to ensure valid index
-    const index = currentSlide.value % props.items.length;
+    const index = visualActiveIndex % props.items.length;
     return props.items[index];
   }
-  return props.items[currentSlide.value];
+
+  // Ensure index is within bounds
+  const index = Math.min(visualActiveIndex, props.items.length - 1);
+  return props.items[index];
 });
 
 // Methods
@@ -733,8 +746,14 @@ const endDrag = () => {
 
 const next = () => {
   if (props.loop) {
-    // Loop usando matemática modular
-    currentSlide.value = (currentSlide.value + 1) % processedItems.value.length;
+    // For duplicated items, use original items length for modular math
+    if (isItemsDuplicated.value) {
+      currentSlide.value = (currentSlide.value + 1) % originalItemsCount.value;
+    } else {
+      // Loop usando matemática modular
+      currentSlide.value =
+        (currentSlide.value + 1) % processedItems.value.length;
+    }
   } else if (props.infinite) {
     currentSlide.value++;
 
@@ -757,10 +776,17 @@ const next = () => {
 
 const previous = () => {
   if (props.loop) {
-    // Loop usando matemática modular
-    currentSlide.value =
-      (currentSlide.value - 1 + processedItems.value.length) %
-      processedItems.value.length;
+    // For duplicated items, use original items length for modular math
+    if (isItemsDuplicated.value) {
+      currentSlide.value =
+        (currentSlide.value - 1 + originalItemsCount.value) %
+        originalItemsCount.value;
+    } else {
+      // Loop usando matemática modular
+      currentSlide.value =
+        (currentSlide.value - 1 + processedItems.value.length) %
+        processedItems.value.length;
+    }
   } else if (props.infinite) {
     currentSlide.value--;
 
@@ -778,16 +804,9 @@ const previous = () => {
 };
 
 const goToSlide = (index: number) => {
-  // For duplicated items, navigate to the corresponding position
+  // For duplicated items, always go to the first set (original items)
   if (isItemsDuplicated.value) {
-    const originalCount = originalItemsCount.value;
-    // If we're in the first set, go to the corresponding index in the second set
-    // If we're in the second set, go to the corresponding index in the first set
-    if (currentSlide.value < originalCount) {
-      currentSlide.value = index + originalCount; // Go to second set
-    } else {
-      currentSlide.value = index; // Go to first set
-    }
+    currentSlide.value = index;
   } else {
     currentSlide.value = index;
   }
