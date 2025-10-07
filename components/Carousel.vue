@@ -97,8 +97,8 @@
           class="w-1.5 h-1.5 rounded-full transition-all duration-200 hover:scale-110 cursor-pointer"
           :class="
             index === activeDotIndex
-              ? 'bg-foundation-verde1 scale-110 w-6'
-              : 'bg-neutral-3 hover:bg-gray-400'
+              ? 'bg-black scale-110 w-6'
+              : 'bg-gray-600 hover:bg-gray-400'
           "
           :aria-label="`Go to slide ${index + 1}`"
         />
@@ -214,8 +214,10 @@ const isPlaying = ref(false);
 
 // Computed
 const isItemsDuplicated = computed(() => {
-  // Detect if items are duplicated (auto-duplication when 3 or fewer items)
-  return props.autoDuplicate && props.items.length <= 3;
+  // Detect if items are duplicated (auto-duplication when 2-3 items, not 1)
+  return (
+    props.autoDuplicate && props.items.length >= 2 && props.items.length <= 3
+  );
 });
 
 // Auto-duplicate items when there are 3 or fewer items
@@ -224,15 +226,13 @@ const processedItems = computed(() => {
     return props.items;
   }
 
-  // If there are 3 or fewer items, duplicate them with unique IDs
-  const duplicatedItems = props.items.map((item, index) => ({
-    ...item,
-    id: `${item.id}-duplicate-${index}`,
-    isDuplicate: true,
-    originalId: item.id,
-  }));
+  // If there's only 1 item, don't duplicate it
+  if (props.items.length === 1) {
+    return props.items;
+  }
 
-  return [...props.items, ...duplicatedItems];
+  // If there are 2-3 items, duplicate them (like in stories)
+  return props.items.concat(props.items).concat(props.items);
 });
 
 const originalItemsCount = computed(() => {
@@ -478,7 +478,11 @@ const getItemStyle = (index: number) => {
 
   // Calcular a posição final baseada na posição relativa
   let finalPosition: number;
-  if (isInViewArea) {
+
+  // Caso especial: se há apenas 1 item, posicioná-lo no início (será centralizado depois)
+  if (props.items.length === 1) {
+    finalPosition = 0;
+  } else if (isInViewArea) {
     // Item na área de visualização - posição baseada na relativePosition
     finalPosition =
       relativePosition * itemWidthWithGap + infiniteOffset + dragOffsetPx;
@@ -523,7 +527,11 @@ const getItemStyle = (index: number) => {
   let scale = baseScale;
   let zIndex = 1;
 
-  if (isInViewArea) {
+  // Caso especial: se há apenas 1 item, dar escala máxima
+  if (props.items.length === 1) {
+    scale = maxScale;
+    zIndex = 10;
+  } else if (isInViewArea) {
     // Item na área de visualização - calcular escala baseada na proximidade do centro
     let distanceFromCenter: number;
 
@@ -556,7 +564,11 @@ const getItemStyle = (index: number) => {
 
   // Centralizar o carousel
   let centerOffset: number;
-  if (props.variableWidth) {
+
+  // Caso especial: se há apenas 1 item, centralizá-lo
+  if (props.items.length === 1) {
+    centerOffset = (containerWidth - itemWidth) / 2;
+  } else if (props.variableWidth) {
     // Para larguras variáveis com múltiplos items visíveis:
     // O item que deveria estar no centro visual é currentSlide + centerIndex
     let visualCenterItemIndex: number;
