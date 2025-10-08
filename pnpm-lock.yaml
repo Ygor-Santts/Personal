@@ -32,6 +32,9 @@ importers:
       vue-i18n:
         specifier: ^11.1.7
         version: 11.1.12(vue@3.5.21(typescript@5.9.2))
+      vue3-zoom-pan-pinch:
+        specifier: ^1.0.2
+        version: 1.0.2(vue@3.5.21(typescript@5.9.2))
     devDependencies:
       '@histoire/plugin-nuxt':
         specifier: 1.0.0-alpha.2
@@ -4947,6 +4950,11 @@ packages:
     hasBin: true
     peerDependencies:
       typescript: '>=5.0.0'
+
+  vue3-zoom-pan-pinch@1.0.2:
+    resolution: {integrity: sha512-3lVQcceYBDgJkOGAMH3LbIMMDN4o6WymgsHw084XpveDjw2Y/+YbtrxMvIPPUlOnQ+JaitnAZUxJc4cnB2Q7gQ==}
+    peerDependencies:
+      vue: '>=3.0.0'
 
   vue@3.5.21:
     resolution: {integrity: sha512-xxf9rum9KtOdwdRkiApWL+9hZEMWE90FHh8yS1+KJAiWYh+iGWV1FquPjoO9VUHQ+VIhsCXNNyZ5Sf4++RVZBA==}
@@ -10545,6 +10553,10 @@ snapshots:
       '@volar/typescript': 2.4.15
       '@vue/language-core': 2.2.12(typescript@5.9.2)
       typescript: 5.9.2
+
+  vue3-zoom-pan-pinch@1.0.2(vue@3.5.21(typescript@5.9.2)):
+    dependencies:
+      vue: 3.5.21(typescript@5.9.2)
 
   vue@3.5.21(typescript@5.9.2):
     dependencies:
