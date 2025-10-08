@@ -1,4 +1,4 @@
-import type { HotspotData } from "~/types/hotspot";
+import type { HotspotData } from "../types/hotspot";
 
 export const hotspotsData: HotspotData[] = [
   // Entrada e Estacionamento (1-4)

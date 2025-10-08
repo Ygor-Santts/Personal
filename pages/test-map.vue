@@ -1,28 +1,17 @@
 <template>
-  <div class="test-page">
-    <h1>Teste do Mapa Interativo</h1>
-    <div class="map-container">
+  <div class="min-h-screen bg-gray-50 p-8 md:p-4 flex flex-col">
+    <h1 class="text-3xl font-bold text-gray-900 mb-6">
+      Teste do Mapa Interativo
+    </h1>
+    <div
+      class="w-full max-h-[600px] border-2 border-gray-200 rounded-lg overflow-hidden shadow-md"
+      style="height: calc(100vh)"
+    >
       <InteractiveMap />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import InteractiveMap from "~/components/organisms/InteractiveMap.vue";
+import InteractiveMap from "../components/organisms/InteractiveMap.vue";
 </script>
-
-<style scoped>
-.test-page {
-  padding: 2rem;
-  background-color: #f9fafb;
-  min-height: 100vh;
-}
-
-.map-container {
-  width: 100%;
-  height: 600px;
-  border: 2px solid #e5e7eb;
-  border-radius: 0.5rem;
-  overflow: hidden;
-}
-</style>

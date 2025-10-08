@@ -18,7 +18,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from "vue";
-import CloseButton from "@/components/atoms/CloseButton.vue";
+// CloseButton é auto-importado pelo Nuxt
 
 interface Props {
   isVisible: boolean;

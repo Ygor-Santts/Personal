@@ -1,147 +1,151 @@
 <template>
-  <div class="interactive-map">
-    <div class="interactive-map__container">
-      <VueZoomPanPinch
-        ref="zoomPanPinchRef"
-        :min-scale="0.5"
-        :max-scale="3"
-        :initial-scale="1"
-        :wheel-step="0.1"
-        :double-click-delay="300"
-        :double-click-step="0.7"
-        :disabled="false"
-        :limit-to-bounds="false"
-        :center-on-init="true"
-        :disable-wheel="false"
-        :disable-pinch="false"
-        :disable-double-click="false"
-        :disable-drag="false"
-        :disable-scroll="false"
-        :disable-keyboard="false"
-        :enable-rtl="false"
-        :prevent-default-events="true"
-        :content-class="'interactive-map__content'"
-        :wrapper-class="'interactive-map__wrapper'"
-        class="interactive-map__zoom-container"
-      >
-        <div class="interactive-map__image-container">
-          <img
-            ref="mapImageRef"
-            src="/resort-map.jpg"
-            alt="Mapa do Resort"
-            class="interactive-map__image"
-            @load="onImageLoad"
-            @error="onImageError"
-          />
+  <div
+    class="relative w-full h-full bg-gray-100 overflow-hidden select-none"
+    ref="containerRef"
+  >
+    <!-- Mapa e Hotspots -->
+    <div
+      ref="mapRef"
+      class="absolute transition-transform duration-200 ease-out"
+      :style="mapStyle"
+      @mousedown="startPan"
+      @touchstart="startPan"
+    >
+      <!-- Imagem do mapa -->
+      <img
+        :src="mapImageSrc"
+        alt="Mapa do Resort"
+        class="block pointer-events-none w-full h-full object-cover"
+        @load="onImageLoad"
+        @error="onImageError"
+      />
 
-          <!-- Hotspots -->
-          <Hotspot
-            v-for="hotspot in hotspotsData"
-            :key="hotspot.number"
-            :number="hotspot.number"
-            :title="hotspot.title"
-            :x="hotspot.x"
-            :y="hotspot.y"
-            @click="handleHotspotClick"
+      <!-- Hotspots -->
+      <div
+        v-for="hotspot in hotspotsData"
+        :key="hotspot.number"
+        class="absolute w-10 h-10 bg-red-500 text-white rounded-full border-2 border-white shadow-md flex items-center justify-center text-sm font-bold cursor-pointer transition-all duration-200 hover:scale-110 hover:bg-red-600 hover:shadow-xl"
+        :style="getHotspotStyle(hotspot)"
+        @click="handleHotspotClick(hotspot)"
+      >
+        {{ hotspot.number }}
+      </div>
+    </div>
+
+    <!-- Controles de Zoom -->
+    <div class="absolute top-4 right-4 flex flex-col gap-2 z-20">
+      <button
+        @click="zoomIn"
+        class="w-10 h-10 bg-white rounded-lg shadow-md flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        aria-label="Zoom in"
+      >
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 4v16m8-8H4"
           />
-        </div>
-      </VueZoomPanPinch>
+        </svg>
+      </button>
+      <button
+        @click="zoomOut"
+        class="w-10 h-10 bg-white rounded-lg shadow-md flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        aria-label="Zoom out"
+      >
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M20 12H4"
+          />
+        </svg>
+      </button>
+      <button
+        @click="resetView"
+        class="w-10 h-10 bg-white rounded-lg shadow-md flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        aria-label="Reset view"
+      >
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+          />
+        </svg>
+      </button>
     </div>
 
     <!-- Popup -->
-    <Popup
-      :is-visible="isPopupVisible"
-      :title="selectedHotspot?.title || ''"
-      :description="selectedHotspot?.description || ''"
-      :x="popupPosition.x"
-      :y="popupPosition.y"
-      @close="closePopup"
-    />
-
-    <!-- Controles -->
-    <div class="interactive-map__controls">
-      <button
-        class="control-button"
-        @click="resetZoom"
-        aria-label="Resetar zoom"
-      >
-        <svg
-          class="control-button__icon"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-          />
-        </svg>
-      </button>
-
-      <button class="control-button" @click="zoomIn" aria-label="Aumentar zoom">
-        <svg
-          class="control-button__icon"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
-          />
-        </svg>
-      </button>
-
-      <button
-        class="control-button"
-        @click="zoomOut"
-        aria-label="Diminuir zoom"
-      >
-        <svg
-          class="control-button__icon"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"
-          />
-        </svg>
-      </button>
-    </div>
+    <Popup :is-visible="isPopupVisible" @close="closePopup">
+      <template #title>
+        {{ selectedHotspot?.title || "" }}
+      </template>
+      <template #description>
+        {{ selectedHotspot?.description || "" }}
+      </template>
+      <template #x>
+        {{ popupPosition.x }}
+      </template>
+      <template #y>
+        {{ popupPosition.y }}
+      </template>
+    </Popup>
 
     <!-- Loading -->
-    <div v-if="isLoading" class="interactive-map__loading">
-      <div class="loading-spinner"></div>
-      <p>Carregando mapa...</p>
+    <div
+      v-if="isLoading"
+      class="absolute inset-0 bg-white bg-opacity-90 flex flex-col items-center justify-center z-30"
+    >
+      <div
+        class="w-8 h-8 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mb-4"
+      ></div>
+      <p class="text-gray-700">Carregando mapa...</p>
     </div>
 
     <!-- Error -->
-    <div v-if="hasError" class="interactive-map__error">
-      <p>Erro ao carregar o mapa. Verifique se o arquivo existe.</p>
-      <button @click="retryLoad" class="retry-button">Tentar novamente</button>
+    <div
+      v-if="hasError"
+      class="absolute inset-0 bg-white bg-opacity-90 flex flex-col items-center justify-center z-30 p-8"
+    >
+      <p class="text-gray-700 mb-4">
+        Erro ao carregar o mapa. Verifique se o arquivo existe.
+      </p>
+      <button
+        @click="retryLoad"
+        class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg border-0 cursor-pointer transition-all duration-200 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
+      >
+        Tentar novamente
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
-import VueZoomPanPinch from "vue3-zoom-pan-pinch";
-import Hotspot from "@/components/atoms/Hotspot.vue";
-import Popup from "@/components/molecules/Popup.vue";
-import { hotspotsData } from "~/data/hotspots";
-import type { HotspotClickEvent, HotspotData } from "~/types/hotspot";
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import type { HotspotData } from "../../types/hotspot";
+import { hotspotsData } from "../../data/hotspots";
 
 // Refs
-const zoomPanPinchRef = ref();
-const mapImageRef = ref<HTMLImageElement>();
+const containerRef = ref<HTMLDivElement>();
+const mapRef = ref<HTMLDivElement>();
 
 // State
 const isLoading = ref(true);
@@ -150,10 +154,166 @@ const isPopupVisible = ref(false);
 const selectedHotspot = ref<HotspotData | null>(null);
 const popupPosition = ref({ x: 50, y: 50 });
 
-// Methods
-const onImageLoad = () => {
+// Transform state
+const scale = ref(1);
+const translateX = ref(0);
+const translateY = ref(0);
+const containerWidth = ref(0);
+const containerHeight = ref(0);
+const imageWidth = ref(0);
+const imageHeight = ref(0);
+
+// Pan state
+const isPanning = ref(false);
+const startX = ref(0);
+const startY = ref(0);
+const lastTranslateX = ref(0);
+const lastTranslateY = ref(0);
+
+// Configurações
+const mapImageSrc = "/resort-map.jpg";
+const minScale = 0.2;
+const maxScale = 3;
+const zoomStep = 0.3;
+
+// Computed
+const mapStyle = computed(() => ({
+  transform: `translate(${translateX.value}px, ${translateY.value}px) scale(${scale.value})`,
+  transformOrigin: "0 0",
+  width: `${containerWidth.value}px`,
+  height: `${containerHeight.value}px`,
+}));
+
+// Métodos
+const getHotspotStyle = (hotspot: HotspotData) => ({
+  left: `${hotspot.x}%`,
+  top: `${hotspot.y}%`,
+  transform: "translate(-50%, -50%)",
+});
+
+const handleHotspotClick = (hotspot: HotspotData) => {
+  selectedHotspot.value = hotspot;
+  popupPosition.value = { x: hotspot.x, y: hotspot.y };
+  isPopupVisible.value = true;
+};
+
+const closePopup = () => {
+  isPopupVisible.value = false;
+  selectedHotspot.value = null;
+};
+
+const zoomIn = () => {
+  const newScale = Math.min(scale.value + zoomStep, maxScale);
+  scale.value = newScale;
+};
+
+const zoomOut = () => {
+  const newScale = Math.max(scale.value - zoomStep, minScale);
+  scale.value = newScale;
+};
+
+const resetView = () => {
+  if (containerRef.value) {
+    const containerRect = containerRef.value.getBoundingClientRect();
+    containerWidth.value = containerRect.width;
+    containerHeight.value = containerRect.height;
+
+    // Recalcular escala para preencher o container
+    const scaleX = containerWidth.value / (imageWidth.value / scale.value);
+    const scaleY = containerHeight.value / (imageHeight.value / scale.value);
+    const fillScale = Math.max(scaleX, scaleY);
+
+    scale.value = fillScale;
+
+    // Centralizar novamente
+    translateX.value = (containerWidth.value - imageWidth.value) / 2;
+    translateY.value = (containerHeight.value - imageHeight.value) / 2;
+    lastTranslateX.value = translateX.value;
+    lastTranslateY.value = translateY.value;
+  }
+};
+
+const startPan = (e: MouseEvent | TouchEvent) => {
+  isPanning.value = true;
+
+  const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+  const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+  startX.value = clientX - translateX.value;
+  startY.value = clientY - translateY.value;
+
+  document.addEventListener("mousemove", onPan);
+  document.addEventListener("mouseup", endPan);
+  document.addEventListener("touchmove", onPan);
+  document.addEventListener("touchend", endPan);
+
+  e.preventDefault();
+};
+
+const onPan = (e: MouseEvent | TouchEvent) => {
+  if (!isPanning.value) return;
+
+  const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+  const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+  translateX.value = clientX - startX.value;
+  translateY.value = clientY - startY.value;
+};
+
+const endPan = () => {
+  isPanning.value = false;
+  lastTranslateX.value = translateX.value;
+  lastTranslateY.value = translateY.value;
+
+  document.removeEventListener("mousemove", onPan);
+  document.removeEventListener("mouseup", endPan);
+  document.removeEventListener("touchmove", onPan);
+  document.removeEventListener("touchend", endPan);
+};
+
+const onWheel = (e: WheelEvent) => {
+  e.preventDefault();
+
+  const delta = e.deltaY > 0 ? -zoomStep : zoomStep;
+  const newScale = Math.max(minScale, Math.min(maxScale, scale.value + delta));
+
+  scale.value = newScale;
+};
+
+const onImageLoad = (event: Event) => {
   isLoading.value = false;
   hasError.value = false;
+
+  if (containerRef.value && event.target) {
+    const img = event.target as HTMLImageElement;
+    const containerRect = containerRef.value.getBoundingClientRect();
+
+    // Obter dimensões reais da imagem
+    const naturalWidth = img.naturalWidth;
+    const naturalHeight = img.naturalHeight;
+
+    // Calcular dimensões do container
+    containerWidth.value = containerRect.width;
+    containerHeight.value = containerRect.height;
+
+    // Calcular escala para preencher o container mantendo proporção
+    const scaleX = containerWidth.value / naturalWidth;
+    const scaleY = containerHeight.value / naturalHeight;
+    const fillScale = Math.max(scaleX, scaleY); // Usar o maior para preencher completamente
+
+    // Definir dimensões da imagem escalada
+    imageWidth.value = naturalWidth * fillScale;
+    imageHeight.value = naturalHeight * fillScale;
+
+    // Centralizar a imagem
+    translateX.value = (containerWidth.value - imageWidth.value) / 2;
+    translateY.value = (containerHeight.value - imageHeight.value) / 2;
+    lastTranslateX.value = translateX.value;
+    lastTranslateY.value = translateY.value;
+
+    // Ajustar escala inicial para preencher o container
+    scale.value = fillScale;
+  }
 };
 
 const onImageError = () => {
@@ -164,253 +324,51 @@ const onImageError = () => {
 const retryLoad = () => {
   isLoading.value = true;
   hasError.value = false;
-  if (mapImageRef.value) {
-    mapImageRef.value.src = mapImageRef.value.src;
-  }
-};
-
-const handleHotspotClick = (event: HotspotClickEvent) => {
-  const hotspot = hotspotsData.find((h) => h.number === event.number);
-  if (hotspot) {
-    selectedHotspot.value = hotspot;
-    popupPosition.value = { x: event.x, y: event.y };
-    isPopupVisible.value = true;
-  }
-};
-
-const closePopup = () => {
-  isPopupVisible.value = false;
-  selectedHotspot.value = null;
-};
-
-const resetZoom = () => {
-  if (zoomPanPinchRef.value) {
-    zoomPanPinchRef.value.resetTransform();
-  }
-};
-
-const zoomIn = () => {
-  if (zoomPanPinchRef.value) {
-    zoomPanPinchRef.value.zoomIn();
-  }
-};
-
-const zoomOut = () => {
-  if (zoomPanPinchRef.value) {
-    zoomPanPinchRef.value.zoomOut();
-  }
+  resetView();
 };
 
 // Fechar popup com ESC
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.key === "Escape" && isPopupVisible.value) {
+    closePopup();
+  }
+};
+
+const handleResize = () => {
+  if (containerRef.value && imageWidth.value > 0) {
+    const containerRect = containerRef.value.getBoundingClientRect();
+    containerWidth.value = containerRect.width;
+    containerHeight.value = containerRect.height;
+
+    // Recalcular posição central
+    translateX.value = (containerWidth.value - imageWidth.value) / 2;
+    translateY.value = (containerHeight.value - imageHeight.value) / 2;
+    lastTranslateX.value = translateX.value;
+    lastTranslateY.value = translateY.value;
+  }
+};
+
 onMounted(() => {
-  const handleKeydown = (event: KeyboardEvent) => {
-    if (event.key === "Escape" && isPopupVisible.value) {
-      closePopup();
-    }
-  };
-
   document.addEventListener("keydown", handleKeydown);
+  window.addEventListener("resize", handleResize);
 
-  onUnmounted(() => {
-    document.removeEventListener("keydown", handleKeydown);
-  });
+  if (containerRef.value) {
+    containerRef.value.addEventListener("wheel", onWheel, { passive: false });
+  }
+});
+
+onUnmounted(() => {
+  document.removeEventListener("keydown", handleKeydown);
+  window.removeEventListener("resize", handleResize);
+
+  if (containerRef.value) {
+    containerRef.value.removeEventListener("wheel", onWheel);
+  }
+
+  // Limpar event listeners de pan
+  document.removeEventListener("mousemove", onPan);
+  document.removeEventListener("mouseup", endPan);
+  document.removeEventListener("touchmove", onPan);
+  document.removeEventListener("touchend", endPan);
 });
 </script>
-
-<style scoped>
-.interactive-map {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  background-color: #f3f4f6;
-  overflow: hidden;
-  min-height: 500px;
-}
-
-.interactive-map__container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.interactive-map__zoom-container {
-  width: 100%;
-  height: 100%;
-}
-
-.interactive-map__wrapper {
-  width: 100%;
-  height: 100%;
-}
-
-.interactive-map__content {
-  width: 100%;
-  height: 100%;
-}
-
-.interactive-map__image-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.interactive-map__image {
-  width: 100%;
-  height: auto;
-  max-width: none;
-  display: block;
-}
-
-.interactive-map__controls {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  z-index: 20;
-}
-
-.control-button {
-  width: 2.5rem;
-  height: 2.5rem;
-  background-color: white;
-  border-radius: 50%;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #374151;
-  transition: all 0.2s ease-in-out;
-  border: none;
-  cursor: pointer;
-}
-
-.control-button:hover {
-  background-color: #f9fafb;
-  color: #111827;
-}
-
-.control-button:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5),
-    0 0 0 4px rgba(59, 130, 246, 0.2);
-}
-
-.control-button__icon {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-.interactive-map__loading {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.9);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 30;
-}
-
-.loading-spinner {
-  width: 2rem;
-  height: 2rem;
-  border: 4px solid #dbeafe;
-  border-top: 4px solid #2563eb;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.interactive-map__error {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.9);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 30;
-  padding: 2rem;
-}
-
-.retry-button {
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  background-color: #2563eb;
-  color: white;
-  border-radius: 0.5rem;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-
-.retry-button:hover {
-  background-color: #1d4ed8;
-}
-
-.retry-button:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-  .interactive-map {
-    min-height: 400px;
-  }
-
-  .interactive-map__controls {
-    top: 0.5rem;
-    right: 0.5rem;
-  }
-
-  .control-button {
-    width: 2rem;
-    height: 2rem;
-  }
-
-  .control-button__icon {
-    width: 1rem;
-    height: 1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .interactive-map {
-    min-height: 300px;
-  }
-
-  .interactive-map__controls {
-    top: 0.25rem;
-    right: 0.25rem;
-  }
-
-  .control-button {
-    width: 1.75rem;
-    height: 1.75rem;
-  }
-
-  .control-button__icon {
-    width: 0.75rem;
-    height: 0.75rem;
-  }
-}
-</style>
