@@ -334,7 +334,6 @@ const handleMapClick = (e: MouseEvent) => {
   hotspotsData.value.push(newHotspot);
   nextHotspotNumber.value++;
 
-  console.log(`Marcador adicionado:`, newHotspot);
   emit("hotspotAdd", newHotspot);
   emit("hotspotsUpdate", [...hotspotsData.value]);
 };
@@ -353,9 +352,6 @@ const closePopup = () => {
 
 const exportHotspots = () => {
   const data = JSON.stringify(hotspotsData.value, null, 2);
-  console.log("=== MARCADORES EXPORTADOS ===");
-  console.log(data);
-  console.log("=============================");
 
   // Copiar para clipboard
   if (navigator.clipboard) {
@@ -382,7 +378,6 @@ const clearHotspots = () => {
   if (confirm("Deseja realmente limpar todos os marcadores?")) {
     hotspotsData.value = [];
     nextHotspotNumber.value = 1;
-    console.log("Todos os marcadores foram removidos");
   }
 };
 
@@ -392,7 +387,6 @@ const removeHotspot = (hotspot: HotspotData) => {
   );
   if (index !== -1) {
     hotspotsData.value.splice(index, 1);
-    console.log(`Marcador ${hotspot.number} removido`);
     emit("hotspotRemove", hotspot);
     emit("hotspotsUpdate", [...hotspotsData.value]);
   }

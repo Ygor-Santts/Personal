@@ -819,7 +819,6 @@ const startAutoPlay = () => {
   if (autoPlayTimer.value) {
     clearInterval(autoPlayTimer.value);
   }
-  console.log("Starting autoplay");
   isPlaying.value = true;
   autoPlayTimer.value = setInterval(() => {
     if (canGoNext.value) {
