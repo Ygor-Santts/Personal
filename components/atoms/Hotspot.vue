@@ -5,6 +5,7 @@
     @click="handleClick"
     :aria-label="`Ponto de interesse ${number}: ${title}`"
   >
+    <slot v-if="icon" name="icon" />
     <span class="hotspot__number">{{ number }}</span>
   </button>
 </template>

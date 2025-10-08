@@ -6,16 +6,22 @@
     <!-- Mapa e Hotspots -->
     <div
       ref="mapRef"
-      class="absolute transition-transform duration-200 ease-out"
+      :class="[
+        'absolute transition-transform duration-200 ease-out',
+        props.editorMode
+          ? 'cursor-crosshair'
+          : 'cursor-grab active:cursor-grabbing',
+      ]"
       :style="mapStyle"
       @mousedown="startPan"
       @touchstart="startPan"
+      @click="handleMapClick"
     >
       <!-- Imagem do mapa -->
       <img
-        :src="mapImageSrc"
+        :src="props.mapImageSrc"
         alt="Mapa do Resort"
-        class="block pointer-events-none w-full h-full object-cover"
+        class="block pointer-events-none w-full h-full"
         @load="onImageLoad"
         @error="onImageError"
       />
@@ -24,16 +30,60 @@
       <div
         v-for="hotspot in hotspotsData"
         :key="hotspot.number"
-        class="absolute w-10 h-10 bg-red-500 text-white rounded-full border-2 border-white shadow-md flex items-center justify-center text-sm font-bold cursor-pointer transition-all duration-200 hover:scale-110 hover:bg-red-600 hover:shadow-xl"
+        :class="getHotspotClasses(hotspot)"
         :style="getHotspotStyle(hotspot)"
-        @click="handleHotspotClick(hotspot)"
+        @click.stop="handleHotspotClick(hotspot)"
+        @contextmenu.prevent.stop="
+          props.editorMode ? removeHotspot(hotspot) : null
+        "
+        :title="
+          props.editorMode
+            ? `Marcador ${hotspot.number} - Clique direito para remover`
+            : hotspot.title
+        "
       >
-        {{ hotspot.number }}
+        {{ getHotspotContent(hotspot) }}
       </div>
     </div>
 
+    <!-- Instrução de uso (apenas em modo editor) -->
+    <div
+      v-if="props.editorMode && props.showEditorTools"
+      class="absolute top-4 left-4 bg-blue-600 text-white px-4 py-3 rounded-lg shadow-md text-sm z-20 max-w-xs"
+    >
+      <div class="font-semibold mb-1">Modo Editor de Marcadores</div>
+      <div class="text-xs opacity-90">
+        • Clique no mapa para adicionar<br />
+        • Clique direito no marcador para remover
+      </div>
+    </div>
+
+    <!-- Botão para exportar dados (apenas em modo editor com ferramentas) -->
+    <div
+      v-if="props.editorMode && props.showEditorTools"
+      class="absolute bottom-4 right-4 flex flex-col gap-2 z-20"
+    >
+      <button
+        @click="exportHotspots"
+        class="px-4 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 text-sm font-medium"
+        aria-label="Exportar marcadores"
+      >
+        Exportar ({{ hotspotsData.length }})
+      </button>
+      <button
+        @click="clearHotspots"
+        class="px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-400 text-sm font-medium"
+        aria-label="Limpar marcadores"
+      >
+        Limpar Todos
+      </button>
+    </div>
+
     <!-- Controles de Zoom -->
-    <div class="absolute top-4 right-4 flex flex-col gap-2 z-20">
+    <div
+      v-if="props.showZoomControls"
+      class="absolute top-4 right-4 flex flex-col gap-2 z-20"
+    >
       <button
         @click="zoomIn"
         class="w-10 h-10 bg-white rounded-lg shadow-md flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -141,11 +191,44 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import type { HotspotData } from "../../types/hotspot";
-import { hotspotsData } from "../../data/hotspots";
 
 // Refs
 const containerRef = ref<HTMLDivElement>();
 const mapRef = ref<HTMLDivElement>();
+
+// Props
+const props = withDefaults(
+  defineProps<{
+    hotspots?: HotspotData[];
+    editorMode?: boolean;
+    showZoomControls?: boolean;
+    showEditorTools?: boolean;
+    mapImageSrc?: string;
+    defaultHotspotColor?: string;
+    defaultHotspotSize?: "small" | "medium" | "large";
+  }>(),
+  {
+    hotspots: () => [],
+    editorMode: false,
+    showZoomControls: true,
+    showEditorTools: false,
+    mapImageSrc: "/resort-map.jpg",
+    defaultHotspotColor: "#ef4444", // red-500
+    defaultHotspotSize: "medium",
+  }
+);
+
+// Emits
+const emit = defineEmits<{
+  hotspotClick: [hotspot: HotspotData];
+  hotspotAdd: [hotspot: HotspotData];
+  hotspotRemove: [hotspot: HotspotData];
+  hotspotsUpdate: [hotspots: HotspotData[]];
+}>();
+
+// State - Hotspots editáveis
+const nextHotspotNumber = ref(1);
+const hotspotsData = ref<HotspotData[]>([...props.hotspots]);
 
 // State
 const isLoading = ref(true);
@@ -162,6 +245,7 @@ const containerWidth = ref(0);
 const containerHeight = ref(0);
 const imageWidth = ref(0);
 const imageHeight = ref(0);
+const minScale = ref(1); // Escala mínima dinâmica (preenche o container)
 
 // Pan state
 const isPanning = ref(false);
@@ -169,32 +253,97 @@ const startX = ref(0);
 const startY = ref(0);
 const lastTranslateX = ref(0);
 const lastTranslateY = ref(0);
+const hasMoved = ref(false); // Para detectar se moveu durante o clique
 
 // Configurações
-const mapImageSrc = "/resort-map.jpg";
-const minScale = 0.2;
 const maxScale = 3;
 const zoomStep = 0.3;
+
+// Mapeamento de tamanhos
+const sizeClasses = {
+  small: "w-5 h-5 text-xs",
+  medium: "w-6 h-6 text-xs",
+  large: "w-8 h-8 text-sm",
+};
 
 // Computed
 const mapStyle = computed(() => ({
   transform: `translate(${translateX.value}px, ${translateY.value}px) scale(${scale.value})`,
   transformOrigin: "0 0",
-  width: `${containerWidth.value}px`,
-  height: `${containerHeight.value}px`,
+  width: `${imageWidth.value}px`,
+  height: `${imageHeight.value}px`,
 }));
 
 // Métodos
-const getHotspotStyle = (hotspot: HotspotData) => ({
-  left: `${hotspot.x}%`,
-  top: `${hotspot.y}%`,
-  transform: "translate(-50%, -50%)",
-});
+const getHotspotStyle = (hotspot: HotspotData) => {
+  const bgColor = hotspot.backgroundColor || props.defaultHotspotColor;
+  return {
+    left: `${hotspot.x}%`,
+    top: `${hotspot.y}%`,
+    transform: "translate(-50%, -50%)",
+    backgroundColor: bgColor,
+  };
+};
+
+const getHotspotClasses = (hotspot: HotspotData) => {
+  const size = (hotspot.size || props.defaultHotspotSize) as
+    | "small"
+    | "medium"
+    | "large";
+  const sizeClass = sizeClasses[size];
+  return `absolute ${sizeClass} text-white rounded-full border border-white shadow-md flex items-center justify-center font-bold cursor-pointer transition-all duration-200 hover:scale-125 hover:shadow-xl`;
+};
+
+const getHotspotContent = (hotspot: HotspotData) => {
+  // Prioridade: icon > text > number
+  if (hotspot.icon) return hotspot.icon;
+  if (hotspot.text) return hotspot.text;
+  return hotspot.number.toString();
+};
+
+const handleMapClick = (e: MouseEvent) => {
+  // Só adicionar marcador em modo editor
+  if (!props.editorMode) return;
+
+  // Não adicionar marcador se houve movimento (pan)
+  if (hasMoved.value) return;
+
+  if (!mapRef.value) return;
+
+  // Obter as coordenadas do clique relativas ao mapa
+  const rect = mapRef.value.getBoundingClientRect();
+  const clickX = e.clientX - rect.left;
+  const clickY = e.clientY - rect.top;
+
+  // Calcular as coordenadas em percentual (0-100)
+  const percentX = (clickX / rect.width) * 100;
+  const percentY = (clickY / rect.height) * 100;
+
+  // Criar novo hotspot
+  const newHotspot: HotspotData = {
+    number: nextHotspotNumber.value,
+    title: `Marcador ${nextHotspotNumber.value}`,
+    description: `Descrição do marcador ${nextHotspotNumber.value}`,
+    x: Math.round(percentX * 100) / 100, // 2 casas decimais
+    y: Math.round(percentY * 100) / 100,
+    category: "attraction",
+    backgroundColor: props.defaultHotspotColor,
+    size: props.defaultHotspotSize,
+  };
+
+  hotspotsData.value.push(newHotspot);
+  nextHotspotNumber.value++;
+
+  console.log(`Marcador adicionado:`, newHotspot);
+  emit("hotspotAdd", newHotspot);
+  emit("hotspotsUpdate", [...hotspotsData.value]);
+};
 
 const handleHotspotClick = (hotspot: HotspotData) => {
   selectedHotspot.value = hotspot;
   popupPosition.value = { x: hotspot.x, y: hotspot.y };
   isPopupVisible.value = true;
+  emit("hotspotClick", hotspot);
 };
 
 const closePopup = () => {
@@ -202,32 +351,129 @@ const closePopup = () => {
   selectedHotspot.value = null;
 };
 
+const exportHotspots = () => {
+  const data = JSON.stringify(hotspotsData.value, null, 2);
+  console.log("=== MARCADORES EXPORTADOS ===");
+  console.log(data);
+  console.log("=============================");
+
+  // Copiar para clipboard
+  if (navigator.clipboard) {
+    navigator.clipboard
+      .writeText(data)
+      .then(() => {
+        alert(
+          `${hotspotsData.value.length} marcadores copiados para a área de transferência!`
+        );
+      })
+      .catch(() => {
+        alert(
+          `Dados exibidos no console. Total: ${hotspotsData.value.length} marcadores`
+        );
+      });
+  } else {
+    alert(
+      `Dados exibidos no console. Total: ${hotspotsData.value.length} marcadores`
+    );
+  }
+};
+
+const clearHotspots = () => {
+  if (confirm("Deseja realmente limpar todos os marcadores?")) {
+    hotspotsData.value = [];
+    nextHotspotNumber.value = 1;
+    console.log("Todos os marcadores foram removidos");
+  }
+};
+
+const removeHotspot = (hotspot: HotspotData) => {
+  const index = hotspotsData.value.findIndex(
+    (h: HotspotData) => h.number === hotspot.number
+  );
+  if (index !== -1) {
+    hotspotsData.value.splice(index, 1);
+    console.log(`Marcador ${hotspot.number} removido`);
+    emit("hotspotRemove", hotspot);
+    emit("hotspotsUpdate", [...hotspotsData.value]);
+  }
+};
+
+// Função para aplicar limites ao pan (não arrastar para fora do mapa)
+const applyPanLimits = (x: number, y: number): { x: number; y: number } => {
+  const scaledWidth = imageWidth.value * scale.value;
+  const scaledHeight = imageHeight.value * scale.value;
+
+  // Calcular os limites
+  // O mapa não deve ser arrastado para além dos limites do container
+  const minX = containerWidth.value - scaledWidth;
+  const maxX = 0;
+  const minY = containerHeight.value - scaledHeight;
+  const maxY = 0;
+
+  // Aplicar limites
+  let limitedX = x;
+  let limitedY = y;
+
+  // Se o mapa for menor que o container em alguma dimensão, centralizar
+  if (scaledWidth <= containerWidth.value) {
+    limitedX = (containerWidth.value - scaledWidth) / 2;
+  } else {
+    limitedX = Math.max(minX, Math.min(maxX, x));
+  }
+
+  if (scaledHeight <= containerHeight.value) {
+    limitedY = (containerHeight.value - scaledHeight) / 2;
+  } else {
+    limitedY = Math.max(minY, Math.min(maxY, y));
+  }
+
+  return { x: limitedX, y: limitedY };
+};
+
 const zoomIn = () => {
   const newScale = Math.min(scale.value + zoomStep, maxScale);
   scale.value = newScale;
+
+  // Aplicar limites após zoom
+  const limited = applyPanLimits(translateX.value, translateY.value);
+  translateX.value = limited.x;
+  translateY.value = limited.y;
+  lastTranslateX.value = limited.x;
+  lastTranslateY.value = limited.y;
 };
 
 const zoomOut = () => {
-  const newScale = Math.max(scale.value - zoomStep, minScale);
+  const newScale = Math.max(scale.value - zoomStep, minScale.value);
   scale.value = newScale;
+
+  // Aplicar limites após zoom
+  const limited = applyPanLimits(translateX.value, translateY.value);
+  translateX.value = limited.x;
+  translateY.value = limited.y;
+  lastTranslateX.value = limited.x;
+  lastTranslateY.value = limited.y;
 };
 
 const resetView = () => {
-  if (containerRef.value) {
+  if (containerRef.value && imageWidth.value > 0) {
     const containerRect = containerRef.value.getBoundingClientRect();
     containerWidth.value = containerRect.width;
     containerHeight.value = containerRect.height;
 
     // Recalcular escala para preencher o container
-    const scaleX = containerWidth.value / (imageWidth.value / scale.value);
-    const scaleY = containerHeight.value / (imageHeight.value / scale.value);
+    const scaleX = containerWidth.value / imageWidth.value;
+    const scaleY = containerHeight.value / imageHeight.value;
     const fillScale = Math.max(scaleX, scaleY);
 
+    // Atualizar escala mínima
+    minScale.value = fillScale;
     scale.value = fillScale;
 
-    // Centralizar novamente
-    translateX.value = (containerWidth.value - imageWidth.value) / 2;
-    translateY.value = (containerHeight.value - imageHeight.value) / 2;
+    // Centralizar a imagem escalada
+    const scaledWidth = imageWidth.value * fillScale;
+    const scaledHeight = imageHeight.value * fillScale;
+    translateX.value = (containerWidth.value - scaledWidth) / 2;
+    translateY.value = (containerHeight.value - scaledHeight) / 2;
     lastTranslateX.value = translateX.value;
     lastTranslateY.value = translateY.value;
   }
@@ -235,6 +481,7 @@ const resetView = () => {
 
 const startPan = (e: MouseEvent | TouchEvent) => {
   isPanning.value = true;
+  hasMoved.value = false;
 
   const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
   const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
@@ -253,11 +500,18 @@ const startPan = (e: MouseEvent | TouchEvent) => {
 const onPan = (e: MouseEvent | TouchEvent) => {
   if (!isPanning.value) return;
 
+  hasMoved.value = true;
+
   const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
   const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
-  translateX.value = clientX - startX.value;
-  translateY.value = clientY - startY.value;
+  const newX = clientX - startX.value;
+  const newY = clientY - startY.value;
+
+  // Aplicar limites para não arrastar para fora do mapa
+  const limited = applyPanLimits(newX, newY);
+  translateX.value = limited.x;
+  translateY.value = limited.y;
 };
 
 const endPan = () => {
@@ -275,9 +529,19 @@ const onWheel = (e: WheelEvent) => {
   e.preventDefault();
 
   const delta = e.deltaY > 0 ? -zoomStep : zoomStep;
-  const newScale = Math.max(minScale, Math.min(maxScale, scale.value + delta));
+  const newScale = Math.max(
+    minScale.value,
+    Math.min(maxScale, scale.value + delta)
+  );
 
   scale.value = newScale;
+
+  // Aplicar limites após zoom
+  const limited = applyPanLimits(translateX.value, translateY.value);
+  translateX.value = limited.x;
+  translateY.value = limited.y;
+  lastTranslateX.value = limited.x;
+  lastTranslateY.value = limited.y;
 };
 
 const onImageLoad = (event: Event) => {
@@ -296,23 +560,28 @@ const onImageLoad = (event: Event) => {
     containerWidth.value = containerRect.width;
     containerHeight.value = containerRect.height;
 
+    // Armazenar as dimensões reais da imagem
+    imageWidth.value = naturalWidth;
+    imageHeight.value = naturalHeight;
+
     // Calcular escala para preencher o container mantendo proporção
     const scaleX = containerWidth.value / naturalWidth;
     const scaleY = containerHeight.value / naturalHeight;
     const fillScale = Math.max(scaleX, scaleY); // Usar o maior para preencher completamente
 
-    // Definir dimensões da imagem escalada
-    imageWidth.value = naturalWidth * fillScale;
-    imageHeight.value = naturalHeight * fillScale;
+    // Definir escala mínima como a escala que preenche o container
+    minScale.value = fillScale;
 
-    // Centralizar a imagem
-    translateX.value = (containerWidth.value - imageWidth.value) / 2;
-    translateY.value = (containerHeight.value - imageHeight.value) / 2;
+    // Definir escala inicial
+    scale.value = fillScale;
+
+    // Centralizar a imagem escalada
+    const scaledWidth = naturalWidth * fillScale;
+    const scaledHeight = naturalHeight * fillScale;
+    translateX.value = (containerWidth.value - scaledWidth) / 2;
+    translateY.value = (containerHeight.value - scaledHeight) / 2;
     lastTranslateX.value = translateX.value;
     lastTranslateY.value = translateY.value;
-
-    // Ajustar escala inicial para preencher o container
-    scale.value = fillScale;
   }
 };
 
@@ -340,9 +609,24 @@ const handleResize = () => {
     containerWidth.value = containerRect.width;
     containerHeight.value = containerRect.height;
 
-    // Recalcular posição central
-    translateX.value = (containerWidth.value - imageWidth.value) / 2;
-    translateY.value = (containerHeight.value - imageHeight.value) / 2;
+    // Recalcular escala para manter o preenchimento
+    const scaleX = containerWidth.value / imageWidth.value;
+    const scaleY = containerHeight.value / imageHeight.value;
+    const fillScale = Math.max(scaleX, scaleY);
+
+    // Atualizar escala mínima
+    minScale.value = fillScale;
+
+    // Se a escala atual for menor que a nova escala mínima, ajustar
+    if (scale.value < fillScale) {
+      scale.value = fillScale;
+    }
+
+    // Centralizar a imagem escalada
+    const scaledWidth = imageWidth.value * scale.value;
+    const scaledHeight = imageHeight.value * scale.value;
+    translateX.value = (containerWidth.value - scaledWidth) / 2;
+    translateY.value = (containerHeight.value - scaledHeight) / 2;
     lastTranslateX.value = translateX.value;
     lastTranslateY.value = translateY.value;
   }
