@@ -44,6 +44,17 @@
       >
         {{ getHotspotContent(hotspot) }}
       </div>
+
+      <!-- Tooltip dentro do mapa para acompanhar transformações -->
+      <Tooltip
+        :is-visible="isPopupVisible"
+        :title="selectedHotspot?.title || ''"
+        :description="selectedHotspot?.description || ''"
+        :x="popupPosition.x"
+        :y="popupPosition.y"
+        position="auto"
+        @close="closePopup"
+      />
     </div>
 
     <!-- Instrução de uso (apenas em modo editor) -->
@@ -143,22 +154,6 @@
       </button>
     </div>
 
-    <!-- Popup -->
-    <Popup :is-visible="isPopupVisible" @close="closePopup">
-      <template #title>
-        {{ selectedHotspot?.title || "" }}
-      </template>
-      <template #description>
-        {{ selectedHotspot?.description || "" }}
-      </template>
-      <template #x>
-        {{ popupPosition.x }}
-      </template>
-      <template #y>
-        {{ popupPosition.y }}
-      </template>
-    </Popup>
-
     <!-- Loading -->
     <div
       v-if="isLoading"
@@ -191,6 +186,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import type { HotspotData } from "../../types/hotspot";
+import Tooltip from "../molecules/Tooltip.vue";
 
 // Refs
 const containerRef = ref<HTMLDivElement>();

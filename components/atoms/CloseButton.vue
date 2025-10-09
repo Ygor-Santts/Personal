@@ -23,6 +23,8 @@
 </template>
 
 <script setup lang="ts">
+import { defineEmits } from "vue";
+
 interface Emits {
   (e: "click"): void;
 }
