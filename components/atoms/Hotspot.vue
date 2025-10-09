@@ -1,12 +1,15 @@
 <template>
   <button
     :style="hotspotStyle"
-    class="hotspot"
+    class="absolute w-8 h-8 bg-red-500 text-white rounded-full border-2 border-white shadow-lg cursor-pointer transition-all duration-200 ease-in-out -translate-x-1/2 -translate-y-1/2 z-10 hover:scale-110 hover:bg-red-600 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 focus:ring-offset-red-200"
     @click="handleClick"
     :aria-label="`Ponto de interesse ${number}: ${title}`"
   >
     <slot v-if="icon" name="icon" />
-    <span class="hotspot__number">{{ number }}</span>
+    <span
+      class="text-sm font-bold leading-none flex items-center justify-center h-full"
+      >{{ number }}</span
+    >
   </button>
 </template>
 
@@ -43,47 +46,3 @@ const handleClick = () => {
   });
 };
 </script>
-
-<style scoped>
-.hotspot {
-  position: absolute;
-  width: 2rem;
-  height: 2rem;
-  background-color: #ef4444;
-  color: white;
-  border-radius: 50%;
-  border: 2px solid white;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  transform: translate(-50%, -50%);
-  z-index: 10;
-}
-
-.hotspot:hover {
-  transform: translate(-50%, -50%) scale(1.1);
-  background-color: #dc2626;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-.hotspot:active {
-  transform: translate(-50%, -50%) scale(0.95);
-}
-
-.hotspot:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(252, 165, 165, 0.5),
-    0 0 0 4px rgba(252, 165, 165, 0.2);
-}
-
-.hotspot__number {
-  font-size: 0.875rem;
-  font-weight: bold;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-}
-</style>

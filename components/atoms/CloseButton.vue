@@ -1,12 +1,12 @@
 <template>
   <button
-    class="close-button"
+    class="absolute top-2 right-2 w-6 h-6 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center transition-all duration-200 ease-in-out border-none cursor-pointer hover:bg-gray-200 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400"
     @click="handleClick"
     aria-label="Fechar"
     type="button"
   >
     <svg
-      class="close-button__icon"
+      class="w-4 h-4"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -33,37 +33,3 @@ const handleClick = () => {
   emit("click");
 };
 </script>
-
-<style scoped>
-.close-button {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  width: 1.5rem;
-  height: 1.5rem;
-  background-color: #f3f4f6;
-  color: #4b5563;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease-in-out;
-  border: none;
-  cursor: pointer;
-}
-
-.close-button:hover {
-  background-color: #e5e7eb;
-  color: #1f2937;
-}
-
-.close-button:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.5);
-}
-
-.close-button__icon {
-  width: 1rem;
-  height: 1rem;
-}
-</style>
