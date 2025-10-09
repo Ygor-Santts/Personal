@@ -15,7 +15,7 @@
         <p class="text-sm text-gray-600 leading-relaxed">{{ description }}</p>
       </div>
 
-      <!-- Seta apontando para o marcador -->
+      <!-- Arrow pointing to the hotspot -->
       <div
         class="absolute w-3 h-3 bg-white border-gray-100 rotate-45"
         :class="arrowClasses"
@@ -32,8 +32,8 @@ interface Props {
   isVisible: boolean;
   title: string;
   description: string;
-  x: number; // posição em percentual (0-100)
-  y: number; // posição em percentual (0-100)
+  x: number; // position as percentage (0-100)
+  y: number; // position as percentage (0-100)
   position?: "top" | "bottom" | "left" | "right" | "auto";
 }
 
@@ -47,41 +47,41 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 
-// Determinar a melhor posição baseada nos limites do mapa
+// Determine the best position based on map boundaries
 const actualPosition = computed(() => {
   if (props.position !== "auto") {
     return props.position;
   }
 
-  // Lógica para determinar a melhor posição automaticamente
-  // Baseado na posição do hotspot no mapa
+  // Logic to determine the best position automatically
+  // Based on the hotspot position on the map
   const x = props.x;
   const y = props.y;
 
-  // Se estiver muito no topo, mostra embaixo
+  // If too close to top, show below
   if (y < 25) {
     return "bottom";
   }
-  // Se estiver muito embaixo, mostra em cima
+  // If too close to bottom, show above
   if (y > 75) {
     return "top";
   }
-  // Se estiver muito à esquerda, mostra à direita
+  // If too close to left, show right
   if (x < 25) {
     return "right";
   }
-  // Se estiver muito à direita, mostra à esquerda
+  // If too close to right, show left
   if (x > 75) {
     return "left";
   }
 
-  // Padrão: em cima
+  // Default: on top
   return "top";
 });
 
 const tooltipStyle = computed(() => {
-  const offset = 3; // espaçamento do marcador em %
-  const tooltipWidthPercent = 30; // largura aproximada do tooltip em %
+  const offset = 3; // spacing from hotspot in %
+  const tooltipWidthPercent = 30; // approximate tooltip width in %
 
   let left = props.x;
   let top = props.y;
@@ -90,7 +90,7 @@ const tooltipStyle = computed(() => {
   switch (actualPosition.value) {
     case "top":
       top = props.y - offset;
-      // Ajustar para não sair dos limites horizontais
+      // Adjust to not overflow horizontal limits
       if (props.x < tooltipWidthPercent / 2) {
         left = tooltipWidthPercent / 2;
       } else if (props.x > 100 - tooltipWidthPercent / 2) {
@@ -101,7 +101,7 @@ const tooltipStyle = computed(() => {
 
     case "bottom":
       top = props.y + offset;
-      // Ajustar para não sair dos limites horizontais
+      // Adjust to not overflow horizontal limits
       if (props.x < tooltipWidthPercent / 2) {
         left = tooltipWidthPercent / 2;
       } else if (props.x > 100 - tooltipWidthPercent / 2) {

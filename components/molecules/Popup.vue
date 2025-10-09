@@ -32,14 +32,14 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from "vue";
-// CloseButton é auto-importado pelo Nuxt
+// CloseButton is auto-imported by Nuxt
 
 interface Props {
   isVisible: boolean;
   title: string;
   description: string;
-  x: number; // posição em percentual (0-100)
-  y: number; // posição em percentual (0-100)
+  x: number; // position as percentage (0-100)
+  y: number; // position as percentage (0-100)
 }
 
 interface Emits {
@@ -50,9 +50,9 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const popupStyle = computed(() => {
-  // Calcular posição para que o popup apareça acima do hotspot
-  // Ajustar a posição Y para colocar o popup acima do ponto
-  const adjustedY = Math.max(props.y - 8, 10); // 8% acima do hotspot, mínimo 10% do topo
+  // Calculate position so popup appears above hotspot
+  // Adjust Y position to place popup above the point
+  const adjustedY = Math.max(props.y - 8, 10); // 8% above hotspot, minimum 10% from top
 
   return {
     left: `${props.x}%`,
@@ -68,7 +68,7 @@ const handleOverlayClick = () => {
   emit("close");
 };
 
-// Fechar com ESC
+// Close with ESC
 onMounted(() => {
   const handleKeydown = (event: KeyboardEvent) => {
     if (event.key === "Escape" && props.isVisible) {
