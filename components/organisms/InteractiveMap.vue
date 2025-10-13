@@ -36,9 +36,20 @@
         :y="hotspot.y"
         :icon="hotspot.icon"
         :style="getHotspotStyle(hotspot)"
+        :class="
+          props.editorMode
+            ? isDraggingHotspot
+              ? 'cursor-grabbing'
+              : 'cursor-move'
+            : ''
+        "
         @click="handleHotspotClick(hotspot)"
         @contextmenu.prevent.stop="
           props.editorMode ? removeHotspot(hotspot) : null
+        "
+        @mousedown="props.editorMode ? startHotspotDrag($event, hotspot) : null"
+        @touchstart="
+          props.editorMode ? startHotspotDrag($event, hotspot) : null
         "
       />
 
@@ -62,7 +73,9 @@
       <div class="font-semibold mb-1">Hotspot Editor Mode</div>
       <div class="text-xs opacity-90">
         • Click on map to add<br />
-        • Right click on hotspot to remove
+        • Click and drag hotspot to move<br />
+        • Click hotspot to view info<br />
+        • Right click hotspot to remove
       </div>
     </div>
 
@@ -249,6 +262,16 @@ const lastTranslateX = ref(0);
 const lastTranslateY = ref(0);
 const hasMoved = ref(false); // To detect if moved during click
 
+// Hotspot drag state
+const isDraggingHotspot = ref(false);
+const draggedHotspot = ref<HotspotData | null>(null);
+const hotspotDragStartX = ref(0);
+const hotspotDragStartY = ref(0);
+const hotspotOriginalX = ref(0);
+const hotspotOriginalY = ref(0);
+const hotspotHasMoved = ref(false); // Track if hotspot was actually moved
+const dragThreshold = 5; // Minimum pixels to move before considering it a drag
+
 // Settings
 const maxScale = 3;
 const zoomStep = 0.3;
@@ -276,8 +299,9 @@ const handleMapClick = (e: MouseEvent) => {
   // Only add hotspot in editor mode
   if (!props.editorMode) return;
 
-  // Don't add hotspot if there was movement (pan)
-  if (hasMoved.value) return;
+  // Don't add hotspot if there was movement (pan) or if we were dragging a hotspot
+  if (hasMoved.value || isDraggingHotspot.value || hotspotHasMoved.value)
+    return;
 
   if (!mapRef.value) return;
 
@@ -310,6 +334,9 @@ const handleMapClick = (e: MouseEvent) => {
 };
 
 const handleHotspotClick = (hotspot: HotspotData) => {
+  // Don't show tooltip if we were dragging or if we moved the hotspot
+  if (isDraggingHotspot.value || hotspotHasMoved.value) return;
+
   selectedHotspot.value = hotspot;
   tooltipPosition.value = { x: hotspot.x, y: hotspot.y };
   isTooltipVisible.value = true;
@@ -359,6 +386,94 @@ const removeHotspot = (hotspot: HotspotData) => {
     emit("hotspotRemove", hotspot);
     emit("hotspotsUpdate", [...hotspotsData.value]);
   }
+};
+
+// Hotspot drag functions
+const startHotspotDrag = (e: MouseEvent | TouchEvent, hotspot: HotspotData) => {
+  if (!props.editorMode) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  // Don't immediately set as dragging - wait for movement
+  draggedHotspot.value = hotspot;
+  hotspotHasMoved.value = false;
+
+  const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+  const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+  hotspotDragStartX.value = clientX;
+  hotspotDragStartY.value = clientY;
+  hotspotOriginalX.value = hotspot.x;
+  hotspotOriginalY.value = hotspot.y;
+
+  document.addEventListener("mousemove", onHotspotDrag);
+  document.addEventListener("mouseup", endHotspotDrag);
+  document.addEventListener("touchmove", onHotspotDrag);
+  document.addEventListener("touchend", endHotspotDrag);
+};
+
+const onHotspotDrag = (e: MouseEvent | TouchEvent) => {
+  if (!draggedHotspot.value) return;
+
+  e.preventDefault();
+
+  const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+  const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+  const deltaX = clientX - hotspotDragStartX.value;
+  const deltaY = clientY - hotspotDragStartY.value;
+
+  // Check if we've moved enough to consider it a drag
+  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+  if (distance > dragThreshold && !isDraggingHotspot.value) {
+    // Now we're actually dragging
+    isDraggingHotspot.value = true;
+    hotspotHasMoved.value = true;
+  }
+
+  if (!isDraggingHotspot.value || !mapRef.value) return;
+
+  const rect = mapRef.value.getBoundingClientRect();
+
+  // Convert pixel delta to percentage delta
+  const percentDeltaX = (deltaX / rect.width) * 100;
+  const percentDeltaY = (deltaY / rect.height) * 100;
+
+  // Calculate new position
+  let newX = hotspotOriginalX.value + percentDeltaX;
+  let newY = hotspotOriginalY.value + percentDeltaY;
+
+  // Clamp to map bounds (0-100%)
+  newX = Math.max(0, Math.min(100, newX));
+  newY = Math.max(0, Math.min(100, newY));
+
+  // Update hotspot position
+  const index = hotspotsData.value.findIndex(
+    (h: HotspotData) => h.number === draggedHotspot.value!.number
+  );
+  if (index !== -1) {
+    hotspotsData.value[index].x = Math.round(newX * 100) / 100; // 2 decimal places
+    hotspotsData.value[index].y = Math.round(newY * 100) / 100; // 2 decimal places
+  }
+};
+
+const endHotspotDrag = () => {
+  if (isDraggingHotspot.value && draggedHotspot.value) {
+    // Emit update event only if we actually moved the hotspot
+    emit("hotspotsUpdate", [...hotspotsData.value]);
+  }
+
+  // Reset all drag state
+  isDraggingHotspot.value = false;
+  draggedHotspot.value = null;
+  hotspotHasMoved.value = false;
+
+  document.removeEventListener("mousemove", onHotspotDrag);
+  document.removeEventListener("mouseup", endHotspotDrag);
+  document.removeEventListener("touchmove", onHotspotDrag);
+  document.removeEventListener("touchend", endHotspotDrag);
 };
 
 // Function to apply pan limits (don't drag outside the map)
@@ -443,6 +558,9 @@ const resetView = () => {
 };
 
 const startPan = (e: MouseEvent | TouchEvent) => {
+  // Don't start panning if we're dragging a hotspot or if we have a hotspot selected
+  if (isDraggingHotspot.value || draggedHotspot.value) return;
+
   isPanning.value = true;
   hasMoved.value = false;
 
@@ -617,5 +735,11 @@ onUnmounted(() => {
   document.removeEventListener("mouseup", endPan);
   document.removeEventListener("touchmove", onPan);
   document.removeEventListener("touchend", endPan);
+
+  // Clean up hotspot drag event listeners
+  document.removeEventListener("mousemove", onHotspotDrag);
+  document.removeEventListener("mouseup", endHotspotDrag);
+  document.removeEventListener("touchmove", onHotspotDrag);
+  document.removeEventListener("touchend", endHotspotDrag);
 });
 </script>
