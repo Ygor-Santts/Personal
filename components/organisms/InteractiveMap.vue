@@ -300,8 +300,14 @@ const handleMapClick = (e: MouseEvent) => {
   if (!props.editorMode) return;
 
   // Don't add hotspot if there was movement (pan) or if we were dragging a hotspot
-  if (hasMoved.value || isDraggingHotspot.value || hotspotHasMoved.value)
+  if (
+    hasMoved.value ||
+    isDraggingHotspot.value ||
+    hotspotHasMoved.value ||
+    draggedHotspot.value
+  ) {
     return;
+  }
 
   if (!mapRef.value) return;
 
@@ -335,7 +341,13 @@ const handleMapClick = (e: MouseEvent) => {
 
 const handleHotspotClick = (hotspot: HotspotData) => {
   // Don't show tooltip if we were dragging or if we moved the hotspot
-  if (isDraggingHotspot.value || hotspotHasMoved.value) return;
+  if (
+    isDraggingHotspot.value ||
+    hotspotHasMoved.value ||
+    draggedHotspot.value
+  ) {
+    return;
+  }
 
   selectedHotspot.value = hotspot;
   tooltipPosition.value = { x: hotspot.x, y: hotspot.y };
@@ -459,16 +471,24 @@ const onHotspotDrag = (e: MouseEvent | TouchEvent) => {
   }
 };
 
-const endHotspotDrag = () => {
-  if (isDraggingHotspot.value && draggedHotspot.value) {
-    // Emit update event only if we actually moved the hotspot
-    emit("hotspotsUpdate", [...hotspotsData.value]);
-  }
-
-  // Reset all drag state
+// Function to reset all drag state
+const resetDragState = () => {
   isDraggingHotspot.value = false;
   draggedHotspot.value = null;
   hotspotHasMoved.value = false;
+};
+
+const endHotspotDrag = () => {
+  // Use setTimeout to ensure state is reset after all events are processed
+  setTimeout(() => {
+    if (isDraggingHotspot.value && draggedHotspot.value) {
+      // Emit update event only if we actually moved the hotspot
+      emit("hotspotsUpdate", [...hotspotsData.value]);
+    }
+
+    // Reset all drag state
+    resetDragState();
+  }, 0);
 
   document.removeEventListener("mousemove", onHotspotDrag);
   document.removeEventListener("mouseup", endHotspotDrag);
@@ -684,6 +704,14 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 };
 
+// Handle clicks outside to reset drag state
+const handleDocumentClick = (event: MouseEvent) => {
+  // If we have a dragged hotspot and click outside, reset state
+  if (draggedHotspot.value && !isDraggingHotspot.value) {
+    resetDragState();
+  }
+};
+
 const handleResize = () => {
   if (containerRef.value && imageWidth.value > 0) {
     const containerRect = containerRef.value.getBoundingClientRect();
@@ -715,6 +743,7 @@ const handleResize = () => {
 
 onMounted(() => {
   document.addEventListener("keydown", handleKeydown);
+  document.addEventListener("click", handleDocumentClick);
   window.addEventListener("resize", handleResize);
 
   if (containerRef.value) {
@@ -723,7 +752,11 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  // Reset all drag state before cleanup
+  resetDragState();
+
   document.removeEventListener("keydown", handleKeydown);
+  document.removeEventListener("click", handleDocumentClick);
   window.removeEventListener("resize", handleResize);
 
   if (containerRef.value) {
