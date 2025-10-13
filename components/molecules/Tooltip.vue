@@ -64,14 +64,14 @@ const emit = defineEmits<Emits>();
 
 // Determine the best position based on map boundaries
 const actualPosition = computed(() => {
-  if (props.position !== "auto") {
+  if (props.position && props.position !== "auto") {
     return props.position;
   }
 
   // Logic to determine the best position automatically
   // Based on the hotspot position on the map
-  const x = props.x;
-  const y = props.y;
+  const x = props.x || 50; // Default to center if undefined
+  const y = props.y || 50; // Default to center if undefined
 
   // If too close to top, show below
   if (y < 25) {
@@ -99,52 +99,56 @@ const tooltipStyle = computed(() => {
   const tooltipWidthPercent = 35; // approximate tooltip width in %
   const tooltipHeightPercent = 20; // approximate tooltip height in %
 
-  let left = props.x;
-  let top = props.y;
+  // Safety checks for undefined props
+  const x = props.x || 50;
+  const y = props.y || 50;
+
+  let left = x;
+  let top = y;
   let transform = "";
 
   switch (actualPosition.value) {
     case "top":
-      top = props.y - offset;
+      top = y - offset;
       // Adjust to not overflow horizontal limits
-      if (props.x < tooltipWidthPercent / 2) {
+      if (x < tooltipWidthPercent / 2) {
         left = tooltipWidthPercent / 2;
-      } else if (props.x > 100 - tooltipWidthPercent / 2) {
+      } else if (x > 100 - tooltipWidthPercent / 2) {
         left = 100 - tooltipWidthPercent / 2;
       }
       transform = "translate(-50%, -100%)";
       break;
 
     case "bottom":
-      top = props.y + offset;
+      top = y + offset;
       // Adjust to not overflow horizontal limits
-      if (props.x < tooltipWidthPercent / 2) {
+      if (x < tooltipWidthPercent / 2) {
         left = tooltipWidthPercent / 2;
-      } else if (props.x > 100 - tooltipWidthPercent / 2) {
+      } else if (x > 100 - tooltipWidthPercent / 2) {
         left = 100 - tooltipWidthPercent / 2;
       }
       transform = "translate(-50%, 0)";
       break;
 
     case "left":
-      left = props.x - offset;
-      top = props.y;
+      left = x - offset;
+      top = y;
       // Adjust to not overflow vertical limits
-      if (props.y < tooltipHeightPercent / 2) {
+      if (y < tooltipHeightPercent / 2) {
         top = tooltipHeightPercent / 2;
-      } else if (props.y > 100 - tooltipHeightPercent / 2) {
+      } else if (y > 100 - tooltipHeightPercent / 2) {
         top = 100 - tooltipHeightPercent / 2;
       }
       transform = "translate(-100%, -50%)";
       break;
 
     case "right":
-      left = props.x + offset;
-      top = props.y;
+      left = x + offset;
+      top = y;
       // Adjust to not overflow vertical limits
-      if (props.y < tooltipHeightPercent / 2) {
+      if (y < tooltipHeightPercent / 2) {
         top = tooltipHeightPercent / 2;
-      } else if (props.y > 100 - tooltipHeightPercent / 2) {
+      } else if (y > 100 - tooltipHeightPercent / 2) {
         top = 100 - tooltipHeightPercent / 2;
       }
       transform = "translate(0, -50%)";
@@ -176,12 +180,14 @@ const arrowClasses = computed(() => {
 // Connection line style to connect tooltip to hotspot
 const connectionLineStyle = computed(() => {
   const offset = 2; // spacing from hotspot in %
+  const x = props.x || 50;
+  const y = props.y || 50;
   
   switch (actualPosition.value) {
     case "top":
       return {
-        left: `${props.x}%`,
-        top: `${props.y - offset}%`,
+        left: `${x}%`,
+        top: `${y - offset}%`,
         width: '2px',
         height: `${offset * 2}%`,
         transform: 'translateX(-50%)',
@@ -189,8 +195,8 @@ const connectionLineStyle = computed(() => {
       };
     case "bottom":
       return {
-        left: `${props.x}%`,
-        top: `${props.y + offset}%`,
+        left: `${x}%`,
+        top: `${y + offset}%`,
         width: '2px',
         height: `${offset * 2}%`,
         transform: 'translateX(-50%)',
@@ -198,8 +204,8 @@ const connectionLineStyle = computed(() => {
       };
     case "left":
       return {
-        left: `${props.x - offset}%`,
-        top: `${props.y}%`,
+        left: `${x - offset}%`,
+        top: `${y}%`,
         width: `${offset * 2}%`,
         height: '2px',
         transform: 'translateY(-50%)',
@@ -207,8 +213,8 @@ const connectionLineStyle = computed(() => {
       };
     case "right":
       return {
-        left: `${props.x + offset}%`,
-        top: `${props.y}%`,
+        left: `${x + offset}%`,
+        top: `${y}%`,
         width: `${offset * 2}%`,
         height: '2px',
         transform: 'translateY(-50%)',
@@ -216,8 +222,8 @@ const connectionLineStyle = computed(() => {
       };
     default:
       return {
-        left: `${props.x}%`,
-        top: `${props.y - offset}%`,
+        left: `${x}%`,
+        top: `${y - offset}%`,
         width: '2px',
         height: `${offset * 2}%`,
         transform: 'translateX(-50%)',
@@ -228,9 +234,12 @@ const connectionLineStyle = computed(() => {
 
 // Hotspot indicator style
 const hotspotIndicatorStyle = computed(() => {
+  const x = props.x || 50;
+  const y = props.y || 50;
+  
   return {
-    left: `${props.x}%`,
-    top: `${props.y}%`,
+    left: `${x}%`,
+    top: `${y}%`,
     transform: 'translate(-50%, -50%)'
   };
 });

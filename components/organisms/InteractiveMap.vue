@@ -41,14 +41,24 @@
         <div
           v-if="selectedHotspot?.number === hotspot.number"
           class="absolute inset-0 rounded-full border-4 border-blue-400 animate-ping"
-          style="width: 48px; height: 48px; margin-left: -24px; margin-top: -24px;"
+          style="
+            width: 48px;
+            height: 48px;
+            margin-left: -24px;
+            margin-top: -24px;
+          "
         ></div>
         <div
           v-if="selectedHotspot?.number === hotspot.number"
           class="absolute inset-0 rounded-full border-2 border-blue-500"
-          style="width: 40px; height: 40px; margin-left: -20px; margin-top: -20px;"
+          style="
+            width: 40px;
+            height: 40px;
+            margin-left: -20px;
+            margin-top: -20px;
+          "
         ></div>
-        
+
         <!-- Hotspot component -->
         <Hotspot
           :number="hotspot.number"
@@ -64,11 +74,13 @@
                 : 'cursor-move'
               : ''
           "
-          @click="handleHotspotClick(hotspot)"
+          @click="handleHotspotClick"
           @contextmenu.prevent.stop="
             props.editorMode ? removeHotspot(hotspot) : null
           "
-          @mousedown="props.editorMode ? startHotspotDrag($event, hotspot) : null"
+          @mousedown="
+            props.editorMode ? startHotspotDrag($event, hotspot) : null
+          "
           @touchstart="
             props.editorMode ? startHotspotDrag($event, hotspot) : null
           "
@@ -358,13 +370,33 @@ const handleMapClick = (e: MouseEvent) => {
   emit("hotspotsUpdate", [...hotspotsData.value]);
 };
 
-const handleHotspotClick = (hotspot: HotspotData) => {
+const handleHotspotClick = (hotspotEvent?: {
+  number: number;
+  title: string;
+  x: number;
+  y: number;
+}) => {
+  // Safety check for undefined event
+  if (!hotspotEvent) {
+    console.warn("Hotspot click event is undefined");
+    return;
+  }
+
   // Don't show tooltip if we were dragging or if we moved the hotspot
   if (
     isDraggingHotspot.value ||
     hotspotHasMoved.value ||
     draggedHotspot.value
   ) {
+    return;
+  }
+
+  // Find the complete hotspot data by number
+  const hotspot = hotspotsData.value.find(
+    (h: HotspotData) => h.number === hotspotEvent.number
+  );
+  if (!hotspot) {
+    console.warn("Hotspot not found:", hotspotEvent.number);
     return;
   }
 
@@ -383,7 +415,7 @@ const handleHotspotClick = (hotspot: HotspotData) => {
     tooltipPosition.value = { x: hotspot.x, y: hotspot.y };
     isTooltipVisible.value = true;
   }
-  
+
   emit("hotspotClick", hotspot);
 };
 
@@ -742,16 +774,16 @@ const handleDocumentClick = (event: MouseEvent) => {
   if (draggedHotspot.value && !isDraggingHotspot.value) {
     resetDragState();
   }
-  
+
   // Close tooltip if clicking outside the map
   if (isTooltipVisible.value && containerRef.value) {
     const rect = containerRef.value.getBoundingClientRect();
-    const isInsideMap = 
+    const isInsideMap =
       event.clientX >= rect.left &&
       event.clientX <= rect.right &&
       event.clientY >= rect.top &&
       event.clientY <= rect.bottom;
-    
+
     if (!isInsideMap) {
       closeTooltip();
     }
