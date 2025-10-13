@@ -28,8 +28,8 @@
 
       <!-- Hotspots -->
       <div
-        v-for="hotspot in hotspotsData"
-        :key="hotspot.number"
+        v-for="(hotspot, index) in hotspotsData"
+        :key="`hotspot-${hotspot.number}-${index}`"
         class="absolute"
         :style="{
           left: `${hotspot.x}%`,
@@ -39,7 +39,7 @@
       >
         <!-- Selection indicator ring -->
         <div
-          v-if="selectedHotspot?.number === hotspot.number"
+          v-show="selectedHotspot?.number === hotspot.number"
           class="absolute inset-0 rounded-full border-4 border-blue-400 animate-ping"
           style="
             width: 48px;
@@ -49,7 +49,7 @@
           "
         ></div>
         <div
-          v-if="selectedHotspot?.number === hotspot.number"
+          v-show="selectedHotspot?.number === hotspot.number"
           class="absolute inset-0 rounded-full border-2 border-blue-500"
           style="
             width: 40px;
@@ -228,7 +228,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, nextTick } from "vue";
 import type { HotspotData } from "../../types/hotspot";
 import Tooltip from "../molecules/Tooltip.vue";
 import Hotspot from "../atoms/Hotspot.vue";
@@ -370,7 +370,7 @@ const handleMapClick = (e: MouseEvent) => {
   emit("hotspotsUpdate", [...hotspotsData.value]);
 };
 
-const handleHotspotClick = (hotspotEvent?: {
+const handleHotspotClick = async (hotspotEvent?: {
   number: number;
   title: string;
   x: number;
@@ -400,10 +400,17 @@ const handleHotspotClick = (hotspotEvent?: {
     return;
   }
 
+  // Use nextTick to ensure DOM updates are completed
+  await nextTick();
+
+  // Store current state to avoid race conditions
+  const currentSelectedNumber = selectedHotspot.value?.number;
+  const currentTooltipVisible = isTooltipVisible.value;
+
   // If clicking the same hotspot, toggle tooltip
-  if (selectedHotspot.value?.number === hotspot.number) {
-    if (isTooltipVisible.value) {
-      closeTooltip();
+  if (currentSelectedNumber === hotspot.number) {
+    if (currentTooltipVisible) {
+      await closeTooltip();
     } else {
       selectedHotspot.value = hotspot;
       tooltipPosition.value = { x: hotspot.x, y: hotspot.y };
@@ -416,10 +423,13 @@ const handleHotspotClick = (hotspotEvent?: {
     isTooltipVisible.value = true;
   }
 
+  // Emit after state changes
+  await nextTick();
   emit("hotspotClick", hotspot);
 };
 
-const closeTooltip = () => {
+const closeTooltip = async () => {
+  await nextTick();
   isTooltipVisible.value = false;
   selectedHotspot.value = null;
 };
