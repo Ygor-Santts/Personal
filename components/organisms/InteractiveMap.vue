@@ -27,23 +27,20 @@
       />
 
       <!-- Hotspots -->
-      <div
+      <Hotspot
         v-for="hotspot in hotspotsData"
         :key="hotspot.number"
-        :class="getHotspotClasses(hotspot)"
+        :number="hotspot.number"
+        :title="hotspot.title"
+        :x="hotspot.x"
+        :y="hotspot.y"
+        :icon="hotspot.icon"
         :style="getHotspotStyle(hotspot)"
-        @click.stop="handleHotspotClick(hotspot)"
+        @click="handleHotspotClick(hotspot)"
         @contextmenu.prevent.stop="
           props.editorMode ? removeHotspot(hotspot) : null
         "
-        :title="
-          props.editorMode
-            ? `Hotspot ${hotspot.number} - Right click to remove`
-            : hotspot.title
-        "
-      >
-        {{ getHotspotContent(hotspot) }}
-      </div>
+      />
 
       <!-- Tooltip inside map to follow transformations -->
       <Tooltip
@@ -187,6 +184,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import type { HotspotData } from "../../types/hotspot";
 import Tooltip from "../molecules/Tooltip.vue";
+import Hotspot from "../atoms/Hotspot.vue";
 
 // Refs
 const containerRef = ref<HTMLDivElement>();
@@ -255,13 +253,6 @@ const hasMoved = ref(false); // To detect if moved during click
 const maxScale = 3;
 const zoomStep = 0.3;
 
-// Size mapping
-const sizeClasses = {
-  small: "w-5 h-5 text-xs",
-  medium: "w-6 h-6 text-xs",
-  large: "w-8 h-8 text-sm",
-};
-
 // Computed
 const mapStyle = computed(() => ({
   transform: `translate(${translateX.value}px, ${translateY.value}px) scale(${scale.value})`,
@@ -279,22 +270,6 @@ const getHotspotStyle = (hotspot: HotspotData) => {
     transform: "translate(-50%, -50%)",
     backgroundColor: bgColor,
   };
-};
-
-const getHotspotClasses = (hotspot: HotspotData) => {
-  const size = (hotspot.size || props.defaultHotspotSize) as
-    | "small"
-    | "medium"
-    | "large";
-  const sizeClass = sizeClasses[size];
-  return `absolute ${sizeClass} text-white rounded-full border border-white shadow-md flex items-center justify-center font-bold cursor-pointer transition-all duration-200 hover:scale-125 hover:shadow-xl`;
-};
-
-const getHotspotContent = (hotspot: HotspotData) => {
-  // Priority: icon > text > number
-  if (hotspot.icon) return hotspot.icon;
-  if (hotspot.text) return hotspot.text;
-  return hotspot.number.toString();
 };
 
 const handleMapClick = (e: MouseEvent) => {
