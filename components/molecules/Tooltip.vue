@@ -1,24 +1,39 @@
 <template>
   <div
     v-if="isVisible"
-    class="absolute z-50 pointer-events-auto transition-all duration-200"
+    class="absolute z-50 pointer-events-auto transition-all duration-300 ease-out"
     :style="tooltipStyle"
     @click.stop
   >
+    <!-- Connection line to hotspot -->
     <div
-      class="relative bg-white rounded-lg shadow-2xl w-64 p-4 border border-gray-100"
+      class="absolute bg-blue-500 opacity-60 transition-all duration-300 ease-out"
+      :style="connectionLineStyle"
+    ></div>
+    
+    <div
+      class="relative bg-white rounded-xl shadow-2xl w-72 p-5 border-2 border-blue-200 animate-in fade-in slide-in-from-bottom-2 duration-300"
     >
       <CloseButton @click="handleClose" />
 
-      <div class="pr-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ title }}</h3>
-        <p class="text-sm text-gray-600 leading-relaxed">{{ description }}</p>
+      <div class="pr-8">
+        <div class="flex items-center mb-3">
+          <div class="w-3 h-3 bg-blue-500 rounded-full mr-3 animate-pulse"></div>
+          <h3 class="text-xl font-bold text-gray-900">{{ title }}</h3>
+        </div>
+        <p class="text-sm text-gray-600 leading-relaxed pl-6">{{ description }}</p>
       </div>
 
-      <!-- Arrow pointing to the hotspot -->
+      <!-- Enhanced arrow pointing to the hotspot -->
       <div
-        class="absolute w-3 h-3 bg-white border-gray-100 rotate-45"
+        class="absolute w-4 h-4 bg-white border-2 border-blue-200 rotate-45 transition-all duration-300"
         :class="arrowClasses"
+      ></div>
+      
+      <!-- Hotspot indicator -->
+      <div
+        class="absolute w-2 h-2 bg-blue-500 rounded-full animate-ping"
+        :style="hotspotIndicatorStyle"
       ></div>
     </div>
   </div>
@@ -80,8 +95,9 @@ const actualPosition = computed(() => {
 });
 
 const tooltipStyle = computed(() => {
-  const offset = 3; // spacing from hotspot in %
-  const tooltipWidthPercent = 30; // approximate tooltip width in %
+  const offset = 4; // spacing from hotspot in %
+  const tooltipWidthPercent = 35; // approximate tooltip width in %
+  const tooltipHeightPercent = 20; // approximate tooltip height in %
 
   let left = props.x;
   let top = props.y;
@@ -113,12 +129,24 @@ const tooltipStyle = computed(() => {
     case "left":
       left = props.x - offset;
       top = props.y;
+      // Adjust to not overflow vertical limits
+      if (props.y < tooltipHeightPercent / 2) {
+        top = tooltipHeightPercent / 2;
+      } else if (props.y > 100 - tooltipHeightPercent / 2) {
+        top = 100 - tooltipHeightPercent / 2;
+      }
       transform = "translate(-100%, -50%)";
       break;
 
     case "right":
       left = props.x + offset;
       top = props.y;
+      // Adjust to not overflow vertical limits
+      if (props.y < tooltipHeightPercent / 2) {
+        top = tooltipHeightPercent / 2;
+      } else if (props.y > 100 - tooltipHeightPercent / 2) {
+        top = 100 - tooltipHeightPercent / 2;
+      }
       transform = "translate(0, -50%)";
       break;
   }
@@ -133,16 +161,78 @@ const tooltipStyle = computed(() => {
 const arrowClasses = computed(() => {
   switch (actualPosition.value) {
     case "top":
-      return "bottom-[-6px] left-1/2 -translate-x-1/2 border-b border-r";
+      return "bottom-[-8px] left-1/2 -translate-x-1/2 border-b-2 border-r-2";
     case "bottom":
-      return "top-[-6px] left-1/2 -translate-x-1/2 border-t border-l";
+      return "top-[-8px] left-1/2 -translate-x-1/2 border-t-2 border-l-2";
     case "left":
-      return "right-[-6px] top-1/2 -translate-y-1/2 border-r border-t";
+      return "right-[-8px] top-1/2 -translate-y-1/2 border-r-2 border-t-2";
     case "right":
-      return "left-[-6px] top-1/2 -translate-y-1/2 border-l border-b";
+      return "left-[-8px] top-1/2 -translate-y-1/2 border-l-2 border-b-2";
     default:
-      return "bottom-[-6px] left-1/2 -translate-x-1/2 border-b border-r";
+      return "bottom-[-8px] left-1/2 -translate-x-1/2 border-b-2 border-r-2";
   }
+});
+
+// Connection line style to connect tooltip to hotspot
+const connectionLineStyle = computed(() => {
+  const offset = 2; // spacing from hotspot in %
+  
+  switch (actualPosition.value) {
+    case "top":
+      return {
+        left: `${props.x}%`,
+        top: `${props.y - offset}%`,
+        width: '2px',
+        height: `${offset * 2}%`,
+        transform: 'translateX(-50%)',
+        transformOrigin: 'top center'
+      };
+    case "bottom":
+      return {
+        left: `${props.x}%`,
+        top: `${props.y + offset}%`,
+        width: '2px',
+        height: `${offset * 2}%`,
+        transform: 'translateX(-50%)',
+        transformOrigin: 'bottom center'
+      };
+    case "left":
+      return {
+        left: `${props.x - offset}%`,
+        top: `${props.y}%`,
+        width: `${offset * 2}%`,
+        height: '2px',
+        transform: 'translateY(-50%)',
+        transformOrigin: 'left center'
+      };
+    case "right":
+      return {
+        left: `${props.x + offset}%`,
+        top: `${props.y}%`,
+        width: `${offset * 2}%`,
+        height: '2px',
+        transform: 'translateY(-50%)',
+        transformOrigin: 'right center'
+      };
+    default:
+      return {
+        left: `${props.x}%`,
+        top: `${props.y - offset}%`,
+        width: '2px',
+        height: `${offset * 2}%`,
+        transform: 'translateX(-50%)',
+        transformOrigin: 'top center'
+      };
+  }
+});
+
+// Hotspot indicator style
+const hotspotIndicatorStyle = computed(() => {
+  return {
+    left: `${props.x}%`,
+    top: `${props.y}%`,
+    transform: 'translate(-50%, -50%)'
+  };
 });
 
 const handleClose = () => {

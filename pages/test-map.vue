@@ -19,11 +19,7 @@
         class="max-w-[600px] max-h-[600px] border-2 border-gray-200 rounded-lg overflow-hidden shadow-md"
         style="height: calc(100vh - 30rem)"
       >
-        <InteractiveMap
-          :hotspots="hotspotsData"
-          :editorMode="true"
-          :showEditorTools="true"
-        />
+        <InteractiveMap :hotspots="hotspotsData" />
       </div>
     </div>
   </div>

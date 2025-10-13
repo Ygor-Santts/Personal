@@ -27,31 +27,53 @@
       />
 
       <!-- Hotspots -->
-      <Hotspot
+      <div
         v-for="hotspot in hotspotsData"
         :key="hotspot.number"
-        :number="hotspot.number"
-        :title="hotspot.title"
-        :x="hotspot.x"
-        :y="hotspot.y"
-        :icon="hotspot.icon"
-        :style="getHotspotStyle(hotspot)"
-        :class="
-          props.editorMode
-            ? isDraggingHotspot
-              ? 'cursor-grabbing'
-              : 'cursor-move'
-            : ''
-        "
-        @click="handleHotspotClick(hotspot)"
-        @contextmenu.prevent.stop="
-          props.editorMode ? removeHotspot(hotspot) : null
-        "
-        @mousedown="props.editorMode ? startHotspotDrag($event, hotspot) : null"
-        @touchstart="
-          props.editorMode ? startHotspotDrag($event, hotspot) : null
-        "
-      />
+        class="absolute"
+        :style="{
+          left: `${hotspot.x}%`,
+          top: `${hotspot.y}%`,
+          transform: 'translate(-50%, -50%)',
+        }"
+      >
+        <!-- Selection indicator ring -->
+        <div
+          v-if="selectedHotspot?.number === hotspot.number"
+          class="absolute inset-0 rounded-full border-4 border-blue-400 animate-ping"
+          style="width: 48px; height: 48px; margin-left: -24px; margin-top: -24px;"
+        ></div>
+        <div
+          v-if="selectedHotspot?.number === hotspot.number"
+          class="absolute inset-0 rounded-full border-2 border-blue-500"
+          style="width: 40px; height: 40px; margin-left: -20px; margin-top: -20px;"
+        ></div>
+        
+        <!-- Hotspot component -->
+        <Hotspot
+          :number="hotspot.number"
+          :title="hotspot.title"
+          :x="0"
+          :y="0"
+          :icon="hotspot.icon"
+          :style="getHotspotStyle(hotspot)"
+          :class="
+            props.editorMode
+              ? isDraggingHotspot
+                ? 'cursor-grabbing'
+                : 'cursor-move'
+              : ''
+          "
+          @click="handleHotspotClick(hotspot)"
+          @contextmenu.prevent.stop="
+            props.editorMode ? removeHotspot(hotspot) : null
+          "
+          @mousedown="props.editorMode ? startHotspotDrag($event, hotspot) : null"
+          @touchstart="
+            props.editorMode ? startHotspotDrag($event, hotspot) : null
+          "
+        />
+      </div>
 
       <!-- Tooltip inside map to follow transformations -->
       <Tooltip
@@ -288,9 +310,6 @@ const mapStyle = computed(() => ({
 const getHotspotStyle = (hotspot: HotspotData) => {
   const bgColor = hotspot.backgroundColor || props.defaultHotspotColor;
   return {
-    left: `${hotspot.x}%`,
-    top: `${hotspot.y}%`,
-    transform: "translate(-50%, -50%)",
     backgroundColor: bgColor,
   };
 };
@@ -349,9 +368,22 @@ const handleHotspotClick = (hotspot: HotspotData) => {
     return;
   }
 
-  selectedHotspot.value = hotspot;
-  tooltipPosition.value = { x: hotspot.x, y: hotspot.y };
-  isTooltipVisible.value = true;
+  // If clicking the same hotspot, toggle tooltip
+  if (selectedHotspot.value?.number === hotspot.number) {
+    if (isTooltipVisible.value) {
+      closeTooltip();
+    } else {
+      selectedHotspot.value = hotspot;
+      tooltipPosition.value = { x: hotspot.x, y: hotspot.y };
+      isTooltipVisible.value = true;
+    }
+  } else {
+    // Select new hotspot
+    selectedHotspot.value = hotspot;
+    tooltipPosition.value = { x: hotspot.x, y: hotspot.y };
+    isTooltipVisible.value = true;
+  }
+  
   emit("hotspotClick", hotspot);
 };
 
@@ -704,11 +736,25 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 };
 
-// Handle clicks outside to reset drag state
+// Handle clicks outside to reset drag state and close tooltip
 const handleDocumentClick = (event: MouseEvent) => {
   // If we have a dragged hotspot and click outside, reset state
   if (draggedHotspot.value && !isDraggingHotspot.value) {
     resetDragState();
+  }
+  
+  // Close tooltip if clicking outside the map
+  if (isTooltipVisible.value && containerRef.value) {
+    const rect = containerRef.value.getBoundingClientRect();
+    const isInsideMap = 
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom;
+    
+    if (!isInsideMap) {
+      closeTooltip();
+    }
   }
 };
 
